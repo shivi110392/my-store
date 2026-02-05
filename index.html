@@ -7,101 +7,95 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
-        :root { --primary: #27ae60; --danger: #e74c3c; --bg: #121212; --panel: #ffffff; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); color: white; overflow: hidden; }
-        
-        /* Camera Section */
-        #camera-section { height: 25vh; background: #000; position: relative; }
-        #webcam { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
-
-        /* Billing Section */
-        #billing-section { height: 75vh; background: var(--panel); color: #333; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 15px; display: flex; flex-direction: column; }
-        
-        /* UI Controls */
-        .controls-bar { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; }
-        .gst-toggle { display: flex; align-items: center; font-size: 13px; font-weight: bold; color: #555; }
-        
-        .item-list { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-        
-        /* Summary & Action */
-        .summary-card { background: #f9f9f9; padding: 12px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #eee; }
-        .total-bill { font-size: 24px; font-weight: 800; color: #000; display: flex; justify-content: space-between; border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 5px; }
-        
-        .main-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; }
-        .sec-btn { padding: 8px 12px; background: #eee; border: none; border-radius: 8px; font-size: 11px; font-weight: bold; }
-
-        /* Modal / Invoice Styles */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); justify-content:center; align-items:center; z-index:1000; }
-        .modal-content { background:#fff; padding:20px; border-radius:15px; width:88%; max-height: 85vh; overflow-y: auto; color: #000; }
-        #receipt-box { font-family: 'Courier New', monospace; font-size: 12px; padding: 5px; }
-        .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+        :root { --primary: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; --text: #333; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; }
+        #camera-section { height: 25vh; background: #000; position: relative; border-bottom: 3px solid var(--primary); }
+        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        #billing-section { height: 75vh; background: #fff; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .item-list { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; border: 1px solid #eee; border-radius: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
+        .edit-input { width: 45px; border: 1px solid #ddd; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center; }
+        .summary-card { background: #fafafa; padding: 12px; border-radius: 15px; border: 1px solid #eaeaea; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+        .delivery-input { width: 60px; border: 1px solid #ccc; border-radius: 5px; text-align: right; }
+        .total-row { font-size: 26px; font-weight: 900; color: #000; border-top: 2px solid #333; margin-top: 8px; padding-top: 8px; }
+        .main-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
+        .modal-content { background:#fff; padding:20px; border-radius:15px; width:90%; max-height: 85vh; overflow-y: auto; color: #000; }
+        #receipt-box { font-family: 'Courier New', monospace; font-size: 12px; }
+        .r-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+        .r-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 10px 0; }
+        .r-table th { border-bottom: 1px dashed #000; text-align: left; }
+        .discount-bar { background: #e0e0e0; padding: 8px; text-align: center; font-weight: bold; margin-top: 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div id="camera-section">
-    <video id="webcam" autoplay playsinline muted></video>
-</div>
+<div id="camera-section"><video id="webcam" autoplay playsinline muted></video></div>
 
 <div id="billing-section">
-    <div class="controls-bar">
-        <div class="gst-toggle">
-            <input type="checkbox" id="gst-switch" style="width:20px; height:20px; margin-right:8px;" onchange="render()">
-            <label for="gst-switch">TAX INVOICE</label>
-        </div>
-        <button class="sec-btn" onclick="viewHistory()">SALES LOG</button>
+    <div class="header-controls">
+        <div class="switch-box"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> <label for="tax-toggle" style="font-weight:bold; font-size:12px;">TAX INVOICE</label></div>
+        <button onclick="openHistory()" style="background:#444; color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:11px;">📜 SALES LOG</button>
     </div>
-
-    <div class="item-list" id="cart">
-        <p style="text-align:center; color:#999; margin-top:30px;">Waiting for scan...</p>
-    </div>
-
+    <div class="item-list" id="cart-items"></div>
     <div class="summary-card">
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--primary)">
-            <span>Total Savings:</span> <b>₹<span id="total-disc">0</span></b>
-        </div>
-        <div class="total-bill">
-            <span>TOTAL:</span> <span>₹<span id="total-amt">0</span></span>
-        </div>
+        <div class="summary-row"><span>Delivery (₹):</span> <input type="number" id="delivery-charge" class="delivery-input" value="0" oninput="renderCart()"></div>
+        <div id="gst-info" style="display:none;"><div class="summary-row" style="color:#e67e22;"><span>Total GST:</span> <b>₹<span id="sum-gst">0</span></b></div></div>
+        <div class="summary-row" style="color:var(--primary);"><span>Savings:</span> <b>₹<span id="sum-savings">0</span></b></div>
+        <div class="summary-row total-row"><span>TOTAL:</span> <span>₹<span id="sum-total">0</span></span></div>
     </div>
-
-    <button class="main-btn" onclick="openPreview()">CREATE BILL / PREVIEW</button>
+    <button class="main-btn" onclick="openInvoicePreview()">PREVIEW & SAVE</button>
 </div>
 
-<div id="preview-modal" class="modal">
-    <div class="modal-content">
-        <div id="receipt-box">
-            <div class="receipt-header">
-                <h3 style="margin:0;">HIMALAYAN GLORY MINI MART</h3>
-                <p style="font-size:10px; margin:2px 0;">Shop No. 1, Kotgarh House, Main Road,<br>Sector-2, New Shimla, Shimla, HP 171009</p>
-                <p style="font-size:10px; margin:2px 0;">GSTIN: 02ERLPS7511E1ZT | Mob: 7876670721</p>
-                <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:5px; font-weight:bold;">
-                    <span>Inv: <span id="r-inv"></span></span>
-                    <span>Date: <span id="r-date"></span></span>
-                </div>
+<div id="invoice-modal" class="modal"><div class="modal-content">
+    <div id="receipt-box">
+        <div class="r-header">
+            <h3 style="margin:0;">HIMALAYAN GLORY MINI MART</h3>
+            <p style="font-size:9px; margin:2px 0;">Kotgarh House, Main Road, Sector-2, New Shimla, HP 171009</p>
+            <div id="gst-header" style="display:none; font-size:9px; font-weight:bold;">GSTIN: 02ERLPS7511E1ZT | Mob: 7876670721</div>
+            <h4 style="margin:8px 0; border:1px solid #000; display:inline-block; padding:2px 8px;">CASH MEMO</h4>
+            <div style="text-align:left; font-size:10px; font-weight:bold; margin-top:5px; line-height:1.4;">
+                <div id="r-date">DATE: 05-02-2026 08:15 PM</div>
+                <div id="r-inv">INVOICE: 1001</div>
             </div>
-            <table style="width:100%; font-size:11px; text-align:left; border-collapse:collapse;">
-                <thead><tr style="border-bottom:1px dashed #000;"><th>Item</th><th>Qty</th><th>Amt</th></tr></thead>
-                <tbody id="r-items"></tbody>
-            </table>
-            <div id="r-summary" style="border-top:1px dashed #000; margin-top:5px; padding-top:5px;"></div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button class="main-btn" onclick="finishBill()">SAVE & FINISH</button>
-            <button onclick="closeModal('preview-modal')" style="flex:0.4; background:#777; color:white; border:none; border-radius:15px;">BACK</button>
+        <table class="r-table">
+            <thead><tr><th>ITEM</th><th>QTY</th><th>MRP</th><th>RATE</th><th>TOTAL</th></tr></thead>
+            <tbody id="r-items-body"></tbody>
+        </table>
+        <div style="text-align:right; border-top:1px dashed #000; padding-top:8px;">
+            <div id="r-gst-break" style="display:none; font-size:11px;"></div>
+            <div>Sub Total: Rs <span id="r-sub">0</span></div>
+            <div>Delivery: Rs <span id="r-delivery">0</span></div>
+            <div style="font-size:16px; font-weight:bold; margin-top:4px;">TOTAL: Rs <span id="r-final">0</span></div>
         </div>
+        <div class="discount-bar">DISCOUNT Rs <span id="r-save">0</span> on this purchase</div>
+        <div style="text-align:center; margin-top:10px; font-size:10px;">Thank you! Visit Again.</div>
     </div>
-</div>
+    <div style="display:flex; gap:10px; margin-top:15px;">
+        <button class="main-btn" onclick="confirmAndSave()">FINISH & NEW BILL</button>
+        <button onclick="closeModal('invoice-modal')" style="background:#777; color:white; border:none; border-radius:12px; padding:15px; flex:0.4;">EDIT</button>
+    </div>
+</div></div>
+
+<div id="history-modal" class="modal"><div class="modal-content">
+    <h3 style="margin-top:0;">Sales Ledger</h3>
+    <div id="day-summary-box" style="background:#f0f7f0; padding:10px; border-radius:10px; margin-bottom:15px; border:1px solid #cce5cc; font-size:13px;">
+        <b>Today's Summary:</b><br>
+        Product Sales: ₹<span id="day-sales">0</span> | Delivery: ₹<span id="day-deliv">0</span><br>
+        <span style="font-size:16px; color:#27ae60;">Total Collection: ₹<span id="day-total">0</span></span>
+    </div>
+    <div id="history-list" style="max-height:50vh; overflow-y:auto;"></div>
+    <button class="main-btn" style="background:#444;" onclick="closeModal('history-modal')">CLOSE</button>
+</div></div>
 
 <script>
-    // DATA LINKS
     const TEACHABLE_URL = "https://teachablemachine.withgoogle.com/models/cycqkc30S/"; 
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
-
-    let inventory = {}, cart = {}, lastItem = null, lastTime = 0;
-    let invNo = parseInt(localStorage.getItem('currentInvNo')) || 11001;
-    let log = JSON.parse(localStorage.getItem('salesLog')) || [];
+    let inventory = {}, cart = {}, currentInv = parseInt(localStorage.getItem('hg_inv')) || 1001;
+    let log = JSON.parse(localStorage.getItem('hg_log')) || [], lastScan = null, lastTime = 0;
 
     async function init() {
         const res = await fetch(SHEET_CSV);
@@ -110,25 +104,21 @@
             const c = r.split(',');
             if(c[0]) inventory[c[0].trim()] = { name: c[1].trim(), mrp: parseFloat(c[2]), price: parseFloat(c[3]), tax: parseFloat(c[4]) || 0 };
         });
-        startCamera();
+        startAI();
     }
 
-    async function startCamera() {
+    async function startAI() {
         const model = await tmImage.load(TEACHABLE_URL+"model.json", TEACHABLE_URL+"metadata.json");
         const video = document.getElementById('webcam');
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
-
         async function loop() {
             const pred = await model.predict(video);
             let top = { probability: 0, className: "" };
             pred.forEach(p => { if(p.probability > top.probability) top = p; });
-
             if(top.probability > 0.98 && top.className !== "Background") {
                 const now = Date.now();
-                if(top.className !== lastItem || (now - lastTime) > 3000) {
-                    addItem(top.className); lastItem = top.className; lastTime = now;
-                }
+                if(top.className !== lastScan || (now-lastTime) > 3000) { addItem(top.className); lastScan = top.className; lastTime = now; }
             }
             requestAnimationFrame(loop);
         }
@@ -137,67 +127,88 @@
 
     function addItem(id) {
         if(!inventory[id]) return;
-        if(cart[id]) cart[id].qty++; else cart[id] = { ...inventory[id], qty: 1 };
+        if(cart[id]) cart[id].qty++; else cart[id] = JSON.parse(JSON.stringify(inventory[id]));
+        if(!cart[id].qty) cart[id].qty = 1;
         new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3').play();
-        render();
+        renderCart();
     }
 
-    function render() {
-        const list = document.getElementById('cart'); list.innerHTML = '';
-        let total = 0, disc = 0;
-        for (let key in cart) {
-            let itm = cart[key];
-            total += (itm.price * itm.qty);
-            disc += (itm.mrp - itm.price) * itm.qty;
-            list.innerHTML += `<div class="item-row">
-                <div><b>${itm.name}</b><br><small>₹${itm.price}</small></div>
-                <div style="font-weight:bold;">x ${itm.qty} <span style="color:red;margin-left:10px" onclick="del('${key}')">✕</span></div>
-            </div>`;
+    function renderCart() {
+        const list = document.getElementById('cart-items'); list.innerHTML = '';
+        let total = 0, savings = 0, gst = 0;
+        const taxOn = document.getElementById('tax-toggle').checked;
+        for (let k in cart) {
+            let itm = cart[k]; let line = itm.price * itm.qty;
+            total += line; savings += (itm.mrp - itm.price) * itm.qty;
+            gst += line - (line / (1 + (itm.tax/100)));
+            list.innerHTML += `<div class="item-row"><div style="flex:1;"><b>${itm.name}</b><br><small>MRP: <input type="number" class="edit-input" value="${itm.mrp}" oninput="updateVal('${k}','mrp',this.value)"> | Rate: <input type="number" class="edit-input" value="${itm.price}" oninput="updateVal('${k}','price',this.value)"></small></div><div style="text-align:right;"><b>x ${itm.qty}</b> <span onclick="delete cart['${k}']; renderCart();" style="color:red;margin-left:5px">✕</span></div></div>`;
         }
-        document.getElementById('total-disc').innerText = disc.toFixed(0);
-        document.getElementById('total-amt').innerText = Math.round(total);
+        const deliv = parseFloat(document.getElementById('delivery-charge').value) || 0;
+        document.getElementById('gst-info').style.display = taxOn ? 'block' : 'none';
+        document.getElementById('sum-gst').innerText = gst.toFixed(2);
+        document.getElementById('sum-savings').innerText = Math.round(savings);
+        document.getElementById('sum-total').innerText = Math.round(total + deliv);
     }
 
-    function openPreview() {
-        if(Object.keys(cart).length === 0) return;
-        const itemsBody = document.getElementById('r-items'); itemsBody.innerHTML = '';
-        const isTax = document.getElementById('gst-switch').checked;
-        let taxable = 0, netTotal = 0;
+    function updateVal(k, f, v) { cart[k][f] = parseFloat(v); renderCart(); }
 
-        for (let key in cart) {
-            let itm = cart[key]; let line = itm.price * itm.qty;
-            taxable += line / (1 + (itm.tax / 100));
-            netTotal += line;
-            itemsBody.innerHTML += `<tr><td>${itm.name}</td><td>${itm.qty}</td><td>₹${line.toFixed(0)}</td></tr>`;
+    function openInvoicePreview(hist = null) {
+        const data = hist || cart; if(!Object.keys(data).length) return;
+        const taxOn = document.getElementById('tax-toggle').checked;
+        const deliv = hist ? hist._deliv : parseFloat(document.getElementById('delivery-charge').value) || 0;
+        const itemsBody = document.getElementById('r-items-body'); itemsBody.innerHTML = '';
+        let sub = 0, save = 0, gst = 0, i = 1;
+        for (let k in data) {
+            if(k.startsWith('_')) continue;
+            let itm = data[k]; let line = itm.price * itm.qty;
+            sub += line; save += (itm.mrp - itm.price) * itm.qty;
+            gst += line - (line / (1 + (itm.tax/100)));
+            itemsBody.innerHTML += `<tr><td>(${i++}) ${itm.name}</td><td>${itm.qty}</td><td>${itm.mrp}</td><td>${itm.price}</td><td>${line.toFixed(0)}</td></tr>`;
         }
-
-        let summary = `<b>TOTAL: ₹${Math.round(netTotal)}</b>`;
-        if(isTax) {
-            summary = `<div style="display:flex;justify-content:space-between"><span>Taxable Value:</span><span>₹${taxable.toFixed(2)}</span></div>
-                       <div style="display:flex;justify-content:space-between"><span>GST Amount:</span><span>₹${(netTotal - taxable).toFixed(2)}</span></div>
-                       <div style="display:flex;justify-content:space-between;font-weight:bold;margin-top:5px;border-top:1px dashed #000;padding-top:5px;"><span>NET PAYABLE:</span><span>₹${Math.round(netTotal)}</span></div>`;
-        }
-        document.getElementById('r-summary').innerHTML = summary;
-        document.getElementById('r-inv').innerText = invNo;
-        document.getElementById('r-date').innerText = new Date().toLocaleDateString();
-        document.getElementById('preview-modal').style.display = 'flex';
+        document.getElementById('gst-header').style.display = taxOn ? 'block' : 'none';
+        document.getElementById('r-gst-break').style.display = taxOn ? 'block' : 'none';
+        document.getElementById('r-gst-break').innerText = `TOTAL GST: Rs ${gst.toFixed(2)}`;
+        document.getElementById('r-sub').innerText = sub.toFixed(0);
+        document.getElementById('r-delivery').innerText = deliv;
+        document.getElementById('r-final').innerText = Math.round(sub + deliv);
+        document.getElementById('r-save').innerText = Math.round(save);
+        document.getElementById('r-inv').innerText = (hist ? hist._inv : currentInv);
+        document.getElementById('r-date').innerText = "DATE: " + (hist ? hist._date : new Date().toLocaleString('en-IN', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true}));
+        document.getElementById('invoice-modal').style.display = 'flex';
     }
 
-    function finishBill() {
-        const total = Math.round(document.getElementById('total-amt').innerText);
-        log.push({ inv: invNo, date: new Date().toLocaleString(), amt: total });
-        localStorage.setItem('salesLog', JSON.stringify(log));
-        invNo++; localStorage.setItem('currentInvNo', invNo);
-        cart = {}; render(); closeModal('preview-modal');
-        alert("Bill Saved Successfully!");
+    function confirmAndSave() {
+        let saveCart = JSON.parse(JSON.stringify(cart));
+        saveCart._inv = currentInv; saveCart._date = new Date().toISOString();
+        saveCart._deliv = parseFloat(document.getElementById('delivery-charge').value) || 0;
+        log.push(saveCart); localStorage.setItem('hg_log', JSON.stringify(log));
+        window.print();
+        currentInv++; localStorage.setItem('hg_inv', currentInv);
+        cart = {}; document.getElementById('delivery-charge').value = 0; renderCart(); closeModal('invoice-modal');
     }
 
-    function viewHistory() {
-        let msg = log.length ? "Last 5 Sales:\n" + log.slice(-5).map(s => `#${s.inv}: ₹${s.amt}`).join("\n") : "No sales logged.";
-        alert(msg);
+    function openHistory() {
+        const list = document.getElementById('history-list'); list.innerHTML = '';
+        let daySales = 0, dayDeliv = 0;
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        log.slice().reverse().forEach((b, idx) => {
+            let total = 0; for(let k in b) if(!k.startsWith('_')) total += b[k].price * b[k].qty;
+            
+            if(b._date.split('T')[0] === todayStr) {
+                daySales += total; dayDeliv += b._deliv;
+            }
+
+            const displayDate = new Date(b._date).toLocaleString('en-IN', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:true});
+            list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;"><span><b>Inv #${b._inv}</b><br><small>${displayDate}</small></span><b>₹${Math.round(total + b._deliv)}</b><button onclick="openInvoicePreview(log[${log.length-1-idx}])" style="background:var(--primary);color:#fff;border:none;padding:5px 8px;border-radius:5px;">RE-PRINT</button></div>`;
+        });
+        
+        document.getElementById('day-sales').innerText = Math.round(daySales);
+        document.getElementById('day-deliv').innerText = Math.round(dayDeliv);
+        document.getElementById('day-total').innerText = Math.round(daySales + dayDeliv);
+        document.getElementById('history-modal').style.display = 'flex';
     }
 
-    function del(k) { delete cart[k]; render(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     init();
 </script>
