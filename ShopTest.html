@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shimla Smart POS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    
+    <style>
+        :root { --primary: #27ae60; --danger: #e74c3c; --bg: #121212; --panel: #ffffff; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); color: white; overflow: hidden; }
+        
+        /* Camera View (Top 35%) */
+        #camera-section { height: 35vh; position: relative; background: #000; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+        .profit-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--primary); font-size: 13px; color: var(--primary); }
+
+        /* Billing Area (Bottom 65%) */
+        #billing-section { height: 65vh; background: var(--panel); color: #333; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); }
+        .item-list { flex-grow: 1; overflow-y: auto; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        
+        /* Summary Section */
+        .summary-card { background: #f9f9f9; padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        .summary-line { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .total-bill { font-size: 24px; font-weight: 800; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 5px; }
+
+        /* Buttons */
+        .qty-box { display: flex; align-items: center; gap: 10px; }
+        .btn-qty { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; background: #fff; font-weight: bold; }
+        .main-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; }
+        
+        /* Confirmation Overlay */
+        #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:100; }
+        .modal-box { background:#fff; padding:30px; border-radius:20px; width:80%; text-align:center; color:#333; }
+    </style>
+</head>
+<body>
+
+<div id="camera-section">
+    <video id="webcam" autoplay playsinline muted></video>
+    <div class="profit-badge">Today's Profit: ₹<span id="profit-val">0</span></div>
+</div>
+
+<div id="billing-section">
+    <div class="item-list" id="cart">
+        <p style="text-align:center; color:#999; margin-top:30px;">Waiting for scan...</p>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-line"><span>Total Items:</span> <b id="total-qty">0</b></div>
+        <div class="summary-line" style="color:var(--primary)"><span>Total Discount:</span> <b>- ₹<span id="total-disc">0</span></b></div>
+        <div class="summary-line total-bill"><span>TOTAL</span> <span>₹<span id="total-amt">0</span></span></div>
+    </div>
+
+    <button class="main-btn" onclick="openConfirm()">GENERATE INVOICE</button>
+</div>
+
+<div id="modal"><div class="modal-box">
+    <h3>Confirm Bill?</h3>
+    <p id="modal-text"></p>
+    <button class="main-btn" onclick="finish()">YES, PRINT</button>
+    <button onclick="document.getElementById('modal').style.display='none'" style="margin-top:15px; border:none; background:none; color:#777;">Back to Edit</button>
+</div></div>
+
+<script>
+    // 1. CONFIGURATION
+    const TEACHABLE_MACHINE_URL = "https://teachablemachine.withgoogle.com/models/cycqkc30S/"; 
+    const GOOGLE_SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
+
+    let inventory = {};
+    let cart = {};
+    let dailyProfit = parseFloat(localStorage.getItem('dayProfit')) || 0;
+    document.getElementById('profit-val').innerText = dailyProfit;
+
+    // 2. LOAD INVENTORY
+    async function loadStock() {
+        const res = await fetch(GOOGLE_SHEET_CSV);
+        const text = await res.text();
+        const rows = text.split('\n').slice(1);
+        rows.forEach(r => {
+            const [id, name, mrp, disc_price] = r.split(',');
+            if(id) inventory[id.trim()] = { name: name.trim(), mrp: parseFloat(mrp), price: parseFloat(disc_price) };
+        });
+    }
+
+    // 3. AI LOGIC
+    let model, webcam;
+    async function startAI() {
+        model = await tmImage.load(TEACHABLE_MACHINE_URL + "model.json", TEACHABLE_MACHINE_URL + "metadata.json");
+        webcam = document.getElementById('webcam');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        webcam.srcObject = stream;
+        predictLoop();
+    }
+
+    async function predictLoop() {
+        const prediction = await model.predict(webcam);
+        prediction.forEach(p => {
+            if(p.probability > 0.98 && p.className !== "Background") addItem(p.className);
+        });
+        setTimeout(predictLoop, 1000); // Check every 1 second to prevent double-billing
+    }
+
+    // 4. BILLING ACTIONS
+    function addItem(id) {
+        if(!inventory[id]) return;
+        if(cart[id]) cart[id].qty++;
+        else cart[id] = { ...inventory[id], qty: 1 };
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3').play();
+        render();
+    }
+
+    function render() {
+        const container = document.getElementById('cart');
+        container.innerHTML = '';
+        let tQty = 0, tDisc = 0, tAmt = 0;
+
+        for (let id in cart) {
+            let item = cart[id];
+            let sub = item.price * item.qty;
+            tQty += item.qty;
+            tDisc += (item.mrp - item.price) * item.qty;
+            tAmt += sub;
+
+            container.innerHTML += `<div class="item-row">
+                <div><b>${item.name}</b><br><small>MRP ₹${item.mrp}</small></div>
+                <div class="qty-box">
+                    <button class="btn-qty" onclick="adj('${id}',-1)">-</button>
+                    <b>${item.qty}</b>
+                    <button class="btn-qty" onclick="adj('${id}',1)">+</button>
+                    <span style="color:red; margin-left:10px;" onclick="del('${id}')">✕</span>
+                </div>
+            </div>`;
+        }
+        document.getElementById('total-qty').innerText = tQty;
+        document.getElementById('total-disc').innerText = tDisc;
+        document.getElementById('total-amt').innerText = tAmt;
+    }
+
+    function adj(id, n) { if(cart[id].qty + n > 0) cart[id].qty += n; render(); }
+    function del(id) { delete cart[id]; render(); }
+
+    function openConfirm() {
+        const amt = document.getElementById('total-amt').innerText;
+        if(amt == 0) return;
+        document.getElementById('modal-text').innerText = `Total Amount: ₹${amt}\nItems: ${document.getElementById('total-qty').innerText}`;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function finish() {
+        let currentTotal = parseFloat(document.getElementById('total-amt').innerText);
+        dailyProfit += (currentTotal * 0.12); // Assumed 12% margin for your goal
+        localStorage.setItem('dayProfit', dailyProfit.toFixed(0));
+        location.reload(); 
+    }
+
+    loadStock();
+    startAI();
+</script>
+</body>
+</html>
