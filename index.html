@@ -8,34 +8,35 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
         :root { --primary: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; --text: #333; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; }
         
-        /* UI Elements */
-        #camera-section { height: 25vh; background: #000; position: relative; border-bottom: 3px solid var(--primary); }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        #camera-section { height: 22vh; min-height: 160px; background: #000; position: relative; border-bottom: 3px solid var(--primary); flex-shrink: 0; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
-        #billing-section { height: 75vh; background: #fff; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
-        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .item-list { flex-grow: 1; overflow-y: auto; margin-bottom: 10px; border: 1px solid #eee; border-radius: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
-        .edit-input { width: 45px; border: 1px solid #ddd; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center; }
-        .summary-card { background: #fafafa; padding: 12px; border-radius: 15px; border: 1px solid #eaeaea; }
-        .summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
-        .delivery-input { width: 60px; border: 1px solid #ccc; border-radius: 5px; text-align: right; }
-        .total-row { font-size: 26px; font-weight: 900; color: #000; border-top: 2px solid #333; margin-top: 8px; padding-top: 8px; }
-        .main-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; }
-        
-        /* Modal Styles */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
-        .modal-content { background:#fff; padding:15px; border-radius:15px; width:90%; max-height: 85vh; overflow-y: auto; color: #000; }
 
-        /* 58mm Thermal Receipt CSS */
-        #receipt-box { width: 58mm; margin: 0 auto; font-family: 'Courier New', monospace; font-size: 10pt; color: #000; }
+        #billing-section { flex: 1; background: #fff; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+        
+        .item-list { flex: 1; overflow-y: auto; margin-bottom: 8px; border: 1px solid #eee; border-radius: 10px; background: #fff; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; }
+        .edit-input { width: 45px; border: 1px solid #ddd; border-radius: 4px; padding: 3px; font-size: 11px; text-align: center; background: #fff; color: #000; }
+
+        .summary-card { background: #fafafa; padding: 10px; border-radius: 12px; border: 1px solid #eaeaea; flex-shrink: 0; margin-bottom: 8px; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
+        .delivery-input { width: 60px; border: 1px solid #ccc; border-radius: 5px; text-align: right; }
+        .total-row { font-size: 24px; font-weight: 900; color: #000; border-top: 2px solid #333; margin-top: 5px; padding-top: 5px; }
+        
+        .main-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; flex-shrink: 0; margin-bottom: env(safe-area-inset-bottom, 5px); }
+        
+        /* Modals & Receipt Styles for 58mm Shreyans Printer */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
+        .modal-content { background:#fff; padding:15px; border-radius:15px; width:92%; max-height: 90vh; overflow-y: auto; color: #000; }
+        #receipt-box { width: 58mm; margin: 0 auto; font-family: 'Courier New', monospace; font-size: 10pt; }
         .r-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
-        .r-table { width: 100%; font-size: 9pt; border-collapse: collapse; }
-        .r-table th { border-bottom: 1px dashed #000; text-align: left; padding: 2px 0; }
-        .r-item-name { font-weight: bold; display: block; margin-top: 5px; }
-        .r-item-details { display: flex; justify-content: space-between; border-bottom: 0.5px solid #eee; padding-bottom: 2px; }
-        .discount-bar { background: #ccc; padding: 5px; text-align: center; font-weight: bold; margin-top: 10px; font-size: 9pt; }
+        .r-item-name { font-weight: bold; display: block; margin-top: 5px; text-transform: uppercase; }
+        .r-item-details { display: flex; justify-content: space-between; border-bottom: 0.5px solid #eee; padding-bottom: 2px; font-size: 9pt; }
+        .discount-bar { background: #ccc; padding: 5px; text-align: center; font-weight: bold; margin-top: 10px; }
 
         @media print {
             body * { visibility: hidden; }
@@ -47,28 +48,38 @@
 </head>
 <body>
 
-<div id="camera-section"><video id="webcam" autoplay playsinline muted></video></div>
+<div id="camera-section">
+    <video id="webcam" autoplay playsinline muted></video>
+</div>
 
 <div id="billing-section">
     <div class="header-controls">
-        <div class="switch-box"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> <label for="tax-toggle" style="font-weight:bold; font-size:12px;">TAX INVOICE</label></div>
-        <button onclick="openHistory()" style="background:#444; color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:11px;">📜 SALES LOG</button>
+        <div style="display:flex; align-items:center; font-weight:bold; font-size:12px;">
+            <input type="checkbox" id="tax-toggle" style="width:18px; height:18px; margin-right:8px;" onchange="renderCart()">
+            <label for="tax-toggle">TAX INVOICE</label>
+        </div>
+        <button onclick="openHistory()" style="background:#444; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:11px;">📜 SALES LOG</button>
     </div>
-    <div class="item-list" id="cart-items"></div>
+
+    <div class="item-list" id="cart-items">
+        <p style="text-align:center; color:#999; margin-top:30px; font-size:13px;">Himalayan Glory POS Ready...</p>
+    </div>
+
     <div class="summary-card">
         <div class="summary-row"><span>Delivery (₹):</span> <input type="number" id="delivery-charge" class="delivery-input" value="0" oninput="renderCart()"></div>
         <div id="gst-info" style="display:none;"><div class="summary-row" style="color:#e67e22;"><span>Total GST:</span> <b>₹<span id="sum-gst">0</span></b></div></div>
         <div class="summary-row" style="color:var(--primary);"><span>Savings:</span> <b>₹<span id="sum-savings">0</span></b></div>
         <div class="summary-row total-row"><span>TOTAL:</span> <span>₹<span id="sum-total">0</span></span></div>
     </div>
+
     <button class="main-btn" onclick="openInvoicePreview()">PREVIEW & SAVE</button>
 </div>
 
 <div id="invoice-modal" class="modal"><div class="modal-content">
     <div id="receipt-box">
         <div class="r-header">
-            <h3 style="margin:0; font-size: 11pt;">HIMALAYAN GLORY</h3>
-            <p style="font-size:7pt; margin:2px 0;">New Shimla, HP 171009</p>
+            <h3 style="margin:0;">HIMALAYAN GLORY</h3>
+            <p style="font-size:7pt; margin:2px 0;">Kotgarh House, Sector-2, New Shimla, HP</p>
             <div id="gst-header" style="display:none; font-size:7pt;">GSTIN: 02ERLPS7511E1ZT</div>
             <div style="text-align:left; font-size:8pt; margin-top:5px; border-top:1px dashed #000; padding-top:3px;">
                 <div id="r-date">DATE: 05/02/2026</div>
@@ -83,19 +94,18 @@
             <div style="font-size:12pt; font-weight:bold; margin-top:2px;">TOTAL: Rs <span id="r-final">0</span></div>
         </div>
         <div class="discount-bar">SAVINGS: Rs <span id="r-save">0</span></div>
-        <div style="text-align:center; margin-top:10px; font-size:7pt;">Thank you! Visit Again.</div>
+        <div style="text-align:center; margin-top:8px; font-size:7pt;">Thank you! Visit Again.</div>
     </div>
     <div style="display:flex; gap:10px; margin-top:15px;">
         <button class="main-btn" onclick="confirmAndSave()">SAVE & PRINT</button>
-        <button onclick="closeModal('invoice-modal')" style="background:#777; color:white; border:none; border-radius:12px; padding:15px; flex:0.4;">BACK</button>
+        <button onclick="closeModal('invoice-modal')" style="background:#777; color:white; border:none; border-radius:12px; padding:15px; flex:0.4;">EDIT</button>
     </div>
 </div></div>
 
 <div id="history-modal" class="modal"><div class="modal-content">
-    <h3 style="margin:0;">Sales Ledger</h3>
-    <div id="day-summary-box" style="background:#f0f7f0; padding:8px; border-radius:10px; margin:10px 0; font-size:12px; border:1px solid #cce5cc;">
-        Total Sales: ₹<span id="day-sales">0</span><br>
-        <b>Collection: ₹<span id="day-total">0</span></b>
+    <h3 style="margin-top:0;">Sales Ledger</h3>
+    <div style="background:#f0f7f0; padding:10px; border-radius:10px; margin-bottom:10px; font-size:12px; border:1px solid #cce5cc;">
+        Today's Collection: <b>₹<span id="day-total">0</span></b>
     </div>
     <div id="history-list" style="max-height:50vh; overflow-y:auto;"></div>
     <button class="main-btn" style="background:#444;" onclick="closeModal('history-modal')">CLOSE</button>
@@ -151,7 +161,7 @@
             let itm = cart[k]; let line = itm.price * itm.qty;
             total += line; savings += (itm.mrp - itm.price) * itm.qty;
             gst += line - (line / (1 + (itm.tax/100)));
-            list.innerHTML += `<div class="item-row"><div style="flex:1;"><b>${itm.name}</b><br><small>MRP: <input type="number" class="edit-input" value="${itm.mrp}" oninput="updateVal('${k}','mrp',this.value)"> | Rate: <input type="number" class="edit-input" value="${itm.price}" oninput="updateVal('${k}','price',this.value)"></small></div><div style="text-align:right;"><b>x ${itm.qty}</b> <span onclick="delete cart['${k}']; renderCart();" style="color:red;margin-left:5px">✕</span></div></div>`;
+            list.innerHTML += `<div class="item-row"><div style="flex:1;"><b>${itm.name}</b><br><small>MRP: <input type="number" class="edit-input" value="${itm.mrp}" oninput="updateVal('${k}','mrp',this.value)"> | Rate: <input type="number" class="edit-input" value="${itm.price}" oninput="updateVal('${k}','price',this.value)"></small></div><div style="text-align:right;">Qty: <input type="number" class="edit-input" style="width:35px" value="${itm.qty}" oninput="updateVal('${k}','qty',this.value)"> <span onclick="delete cart['${k}']; renderCart();" style="color:red;margin-left:5px">✕</span></div></div>`;
         }
         const deliv = parseFloat(document.getElementById('delivery-charge').value) || 0;
         document.getElementById('gst-info').style.display = taxOn ? 'block' : 'none';
@@ -174,13 +184,13 @@
             let itm = data[k]; let line = itm.price * itm.qty;
             sub += line; save += (itm.mrp - itm.price) * itm.qty;
             gst += line - (line / (1 + (itm.tax/100)));
-            itemsList.innerHTML += `<div class="r-item-name">(${i++}) ${itm.name}</div>
+            itemsList.innerHTML += `<div class="r-item-name">${i++}. ${itm.name}</div>
                                     <div class="r-item-details"><span>${itm.qty} x ${itm.price}</span><span>Rs ${line.toFixed(0)}</span></div>`;
         }
 
         document.getElementById('gst-header').style.display = taxOn ? 'block' : 'none';
         document.getElementById('r-gst-break').style.display = taxOn ? 'block' : 'none';
-        document.getElementById('r-gst-break').innerText = `TOTAL GST: Rs ${gst.toFixed(2)}`;
+        document.getElementById('r-gst-break').innerText = `GST included: Rs ${gst.toFixed(2)}`;
         document.getElementById('r-sub').innerText = sub.toFixed(0);
         document.getElementById('r-delivery').innerText = deliv;
         document.getElementById('r-final').innerText = Math.round(sub + deliv);
@@ -192,29 +202,24 @@
 
     function confirmAndSave() {
         let saveCart = JSON.parse(JSON.stringify(cart));
-        saveCart._inv = currentInv; 
-        saveCart._date_iso = new Date().toISOString();
-        saveCart._date_disp = new Date().toLocaleString('en-IN', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
+        saveCart._inv = currentInv; saveCart._date_iso = new Date().toISOString();
+        saveCart._date_disp = new Date().toLocaleString('en-IN', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', hour12:true});
         saveCart._deliv = parseFloat(document.getElementById('delivery-charge').value) || 0;
         log.push(saveCart); localStorage.setItem('hg_log', JSON.stringify(log));
-        
         window.print();
-        
         currentInv++; localStorage.setItem('hg_inv', currentInv);
         cart = {}; document.getElementById('delivery-charge').value = 0; renderCart(); closeModal('invoice-modal');
     }
 
     function openHistory() {
         const list = document.getElementById('history-list'); list.innerHTML = '';
-        let daySales = 0, dayDeliv = 0;
-        const todayStr = new Date().toISOString().split('T')[0];
+        let totalColl = 0; const todayStr = new Date().toISOString().split('T')[0];
         log.slice().reverse().forEach((b, idx) => {
-            let total = 0; for(let k in b) if(!k.startsWith('_')) total += b[k].price * b[k].qty;
-            if(b._date_iso.split('T')[0] === todayStr) { daySales += total; dayDeliv += b._deliv; }
-            list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;"><span><b>#${b._inv}</b><br><small>${b._date_disp}</small></span><b>₹${Math.round(total + b._deliv)}</b><button onclick="openInvoicePreview(log[${log.length-1-idx}])" style="background:var(--primary);color:#fff;border:none;padding:5px 8px;border-radius:5px;">PRINT</button></div>`;
+            let t = 0; for(let k in b) if(!k.startsWith('_')) t += b[k].price * b[k].qty;
+            if(b._date_iso.split('T')[0] === todayStr) totalColl += (t + b._deliv);
+            list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;"><span>#${b._inv}<br><small>${b._date_disp}</small></span><b>₹${Math.round(t + b._deliv)}</b><button onclick="openInvoicePreview(log[${log.length-1-idx}])" style="background:var(--primary);color:#fff;border:none;padding:5px 8px;border-radius:5px;font-size:10px;">PRINT</button></div>`;
         });
-        document.getElementById('day-sales').innerText = Math.round(daySales);
-        document.getElementById('day-total').innerText = Math.round(daySales + dayDeliv);
+        document.getElementById('day-total').innerText = Math.round(totalColl);
         document.getElementById('history-modal').style.display = 'flex';
     }
 
