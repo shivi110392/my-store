@@ -18,7 +18,7 @@
         
         .self-check-btn { background: #000; color: #fff; width: 100%; max-width: 360px; padding: 22px; border-radius: 50px; font-size: 22px; font-weight: 800; border: 2px solid #333; cursor: pointer; text-transform: uppercase; margin-top: 40px; }
 
-        /* Main App */
+        /* Main App UI */
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 20vh; background: #000; position: relative; border-bottom: 4px solid var(--primary); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
@@ -27,7 +27,7 @@
         .item-list { flex: 1; overflow-y: auto; color: #000; margin-bottom: 10px; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; font-weight: 700; font-size: 18px; color: #000; }
         
-        /* Hero Savings */
+        /* Unified Hero Savings */
         .savings-hero { background: #e8f5e9; padding: 15px; border-radius: 20px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 10px; }
         .savings-hero b { font-size: 65px; color: var(--primary); font-weight: 900; display: flex; justify-content: center; align-items: center; }
 
@@ -95,7 +95,8 @@
 </div></div>
 
 <script>
-    const TEACHABLE_URL = "https://teachablemachine.withgoogle.com/models/cycqkc30S/"; 
+    // Updated Model URL
+    const TEACHABLE_URL = "https://teachablemachine.withgoogle.com/models/bZtta4RfC/"; 
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
     
     let inventory = {}, cart = {}, currentMode = 'self', isScanning = true;
