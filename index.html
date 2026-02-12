@@ -7,35 +7,42 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
-        :root { --primary: #27ae60; --gold: #d4af37; --danger: #e74c3c; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; overflow: hidden; }
+        :root { --primary: #2ecc71; --gold: #f1c40f; --danger: #e74c3c; --dark: #121212; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
         
-        /* Entrance - Minimalist style */
-        #entrance-screen { position: fixed; inset: 0; background: #fff; z-index: 2000; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 60px 20px; text-align: center; }
-        .staff-link { position: absolute; top: 20px; right: 20px; font-size: 11px; color: #ddd; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
-        .logo-main { width: 220px; height: auto; margin-top: 15vh; }
-        .self-check-btn { background: var(--primary); color: white; width: 100%; max-width: 340px; padding: 25px; border-radius: 20px; font-size: 24px; font-weight: bold; border: none; box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3); cursor: pointer; transition: 0.3s; }
+        /* Premium Entrance */
+        #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 60px 20px; text-align: center; }
+        .staff-link { position: absolute; top: 25px; right: 25px; font-size: 10px; color: #444; cursor: pointer; letter-spacing: 2px; text-transform: uppercase; }
+        .logo-main { width: 280px; height: auto; margin-top: 10vh; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); }
+        
+        .self-check-btn { 
+            background: linear-gradient(135deg, #2ecc71, #27ae60); 
+            color: white; width: 100%; max-width: 360px; padding: 22px; 
+            border-radius: 50px; font-size: 22px; font-weight: 800; border: none; 
+            box-shadow: 0 15px 35px rgba(46, 204, 113, 0.4); cursor: pointer; 
+            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .self-check-btn:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.2); }
 
-        /* App UI */
-        #main-app { display: none; height: 100vh; flex-direction: column; }
+        /* Main App */
+        #main-app { display: none; height: 100vh; flex-direction: column; background: #f9f9f9; color: #333; }
         #camera-section { height: 20vh; background: #000; position: relative; border-bottom: 4px solid var(--primary); }
-        #webcam { width: 100%; height: 100%; object-fit: cover; }
-        .nav-btn { position: absolute; top: 12px; padding: 10px 15px; border-radius: 12px; border: none; font-weight: bold; color: white; z-index: 100; font-size: 11px; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        .nav-btn { position: absolute; top: 12px; padding: 10px 18px; border-radius: 30px; border: none; font-weight: 800; color: white; z-index: 100; font-size: 11px; }
 
-        #billing-section { flex: 1; background: #fff; border-top-left-radius: 30px; border-top-right-radius: 30px; padding: 15px; display: flex; flex-direction: column; overflow: hidden; }
-        .item-list { flex: 1; overflow-y: auto; border: 1px solid #f0f0f0; border-radius: 20px; margin-bottom: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 14px; border-bottom: 1px solid #f9f9f9; }
+        #billing-section { flex: 1; background: #fff; border-top-left-radius: 35px; border-top-right-radius: 35px; padding: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -10px 40px rgba(0,0,0,0.05); }
+        .item-list { flex: 1; overflow-y: auto; margin-bottom: 15px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #f2f2f2; }
         
-        /* Unified High-Impact Savings */
-        .savings-hero { background: #e8f5e9; padding: 15px; border-radius: 18px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 10px; }
-        .savings-hero b { font-size: 70px; color: var(--primary); font-weight: 900; letter-spacing: -3px; }
+        /* Unified Hero Savings */
+        .savings-hero { background: #e8f5e9; padding: 18px; border-radius: 25px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 15px; }
+        .savings-hero b { font-size: 75px; color: var(--primary); font-weight: 900; letter-spacing: -4px; display: flex; justify-content: center; align-items: center; }
 
-        .total-row { font-size: 30px; font-weight: 900; color: #000; display: flex; justify-content: space-between; padding: 10px 5px; border-top: 2.5px solid #333; }
-        .edit-input { width: 50px; border: 1px solid #ccc; border-radius: 6px; padding: 5px; text-align: center; font-weight: bold; }
-        .qty-btn { width: 35px; height: 35px; border: none; background: #f0f0f0; border-radius: 8px; font-weight: bold; font-size: 20px; }
+        .total-row { font-size: 32px; font-weight: 900; color: #000; display: flex; justify-content: space-between; padding: 15px 5px; border-top: 3px solid #111; }
+        .qty-btn { width: 40px; height: 40px; border: none; background: #f0f0f0; border-radius: 12px; font-weight: 800; font-size: 22px; color: #333; }
 
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:1000; }
-        .popup { background:#fff; padding:30px; border-radius:35px; width:85%; max-width: 400px; text-align: center; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; backdrop-filter: blur(5px); }
+        .popup { background:#fff; padding:35px; border-radius:40px; width:85%; max-width: 420px; text-align: center; }
 
         @media print { body * { visibility: hidden; } #receipt-box, #receipt-box * { visibility: visible; } #receipt-box { position: absolute; left: 0; top: 0; width: 58mm; } }
     </style>
@@ -43,57 +50,58 @@
 <body>
 
 <div id="entrance-screen">
-    <div class="staff-link" onclick="startApp('counter')">ADMIN ACCESS</div>
+    <div class="staff-link" onclick="startApp('counter')">Staff Only</div>
     <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
-    <button class="self-check-btn" onclick="startApp('self')">START SELF CHECKOUT</button>
+    <button class="self-check-btn" onclick="startApp('self')">Start Self Checkout</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <button class="nav-btn" style="left:12px; background:rgba(0,0,0,0.6);" onclick="location.reload()">⬅ EXIT</button>
-        <button id="help-btn" class="nav-btn" style="right:12px; background:var(--danger); display:none;" onclick="alert('Staff Notified!')">🆘 HELP</button>
+        <button class="nav-btn" style="left:15px; background:rgba(255,255,255,0.15);" onclick="location.reload()">EXIT</button>
+        <button id="help-btn" class="nav-btn" style="right:15px; background:var(--danger); display:none;" onclick="alert('Staff Notified!')">HELP</button>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
-        <div id="admin-tools" style="display:none; padding-bottom:10px;">
-            <label style="font-weight:bold;"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> TAX INVOICE (GST)</label>
+        <div id="admin-tools" style="display:none; padding-bottom:15px; border-bottom: 1px solid #eee; margin-bottom:15px;">
+            <label style="font-weight:800; color: #666; font-size: 14px;"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> ACTIVATE GST INVOICE</label>
         </div>
         <div class="item-list" id="cart-items"></div>
         <div class="savings-hero" id="savings-box">
-            <span style="color:var(--primary); font-weight:bold; font-size:12px;">TOTAL SAVINGS</span><br>
+            <span style="color:var(--primary); font-weight:800; font-size:12px; letter-spacing: 1px;">TOTAL SAVINGS</span><br>
             <b>₹<span id="sum-savings">0</span></b>
         </div>
-        <div class="total-row"><span>TO PAY:</span><span>₹<span id="sum-total">0</span></span></div>
-        <button class="self-check-btn" style="width:100%; margin-top:10px;" onclick="showReceipt()">PAY & PRINT</button>
+        <div class="total-row"><span>TO PAY</span><span>₹<span id="sum-total">0</span></span></div>
+        <button class="self-check-btn" style="width:100%; margin-top:10px; border-radius: 20px;" onclick="showReceipt()">PAY & PRINT</button>
     </div>
 </div>
 
 <div id="qty-modal" class="modal"><div class="popup">
-    <h2 id="pop-name">Product</h2>
-    <div style="display:flex; justify-content:center; align-items:center; gap:20px; margin:25px 0;">
-        <button class="qty-btn" style="width:60px; height:60px;" onclick="updateTempQty(-1)">−</button>
-        <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
-        <button class="qty-btn" style="width:60px; height:60px; background:var(--primary); color:#fff;" onclick="updateTempQty(1)">+</button>
+    <h2 id="pop-name" style="margin-top:0; font-weight: 900; font-size: 28px;">Product</h2>
+    <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:30px 0;">
+        <button class="qty-btn" style="width:70px; height:70px;" onclick="updateTempQty(-1)">−</button>
+        <span id="pop-qty" style="font-size:55px; font-weight:900;">1</span>
+        <button class="qty-btn" style="width:70px; height:70px; background:var(--primary); color:#fff;" onclick="updateTempQty(1)">+</button>
     </div>
-    <button id="add-btn" class="self-check-btn" onclick="addFromPopup()">ADD TO BILL</button>
+    <button id="add-btn" class="self-check-btn" style="border-radius: 20px;" onclick="addFromPopup()">ADD TO BILL</button>
 </div></div>
 
-<div id="receipt-modal" class="modal"><div class="popup" style="padding:20px;">
+<div id="receipt-modal" class="modal"><div class="popup" style="padding:25px; border-radius: 30px;">
     <div id="receipt-box" style="width:58mm; margin:0 auto; font-family:monospace; text-align:left; font-size:10pt;">
         <center>
-            <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:45px; margin-bottom:5px;">
-            <h3 style="margin:0;">HIMALAYAN GLORY</h3>
-            <div id="gst-header" style="font-size:7pt; display:none;">GSTIN: 02ERLPS7511E1ZT</div>
-            <hr style="border:0.5px dashed #000;">
+            <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:50px; margin-bottom:8px;">
+            <h3 style="margin:0; font-weight: 900;">HIMALAYAN GLORY</h3>
+            <div id="gst-header" style="font-size:7pt; font-weight: bold; margin-top: 4px;">TAX INVOICE | GST: 02ERLPS7511E1ZT</div>
+            <hr style="border:0.5px dashed #000; margin: 10px 0;">
         </center>
-        <div id="r-items"></div>
+        <div id="r-items" style="margin-bottom: 10px;"></div>
         <hr style="border:0.5px dashed #000;">
         <div style="text-align:right; font-weight:bold;">
-            <div id="r-gst-line" style="font-size:8pt; display:none;">GST Incl: Rs <span id="r-gst">0</span></div>
-            <div style="font-size:12pt;">TOTAL: Rs <span id="r-total">0</span></div>
+            <div id="r-gst-line" style="font-size:8pt; margin-bottom: 4px;">GST Included: Rs <span id="r-gst">0</span></div>
+            <div style="font-size:14pt; border-top: 1px solid #eee; padding-top: 5px;">TOTAL: Rs <span id="r-total">0</span></div>
         </div>
+        <center style="font-size: 7pt; margin-top: 20px; color: #555;">SHIMLA SECTOR-2 • VISIT AGAIN</center>
     </div>
-    <button class="self-check-btn" style="margin-top:20px;" onclick="window.print(); location.reload();">PRINT RECEIPT</button>
+    <button class="self-check-btn" style="margin-top:25px; border-radius: 20px;" onclick="window.print(); location.reload();">PRINT & FINISH</button>
 </div></div>
 
 <script>
@@ -156,10 +164,10 @@
         const btn = document.getElementById('add-btn');
         if(tempQty >= 5) {
             btn.style.background = "var(--gold)";
-            btn.style.boxShadow = "0 10px 25px rgba(212, 175, 55, 0.4)";
+            btn.style.boxShadow = "0 10px 25px rgba(241, 196, 15, 0.4)";
         } else {
             btn.style.background = "var(--primary)";
-            btn.style.boxShadow = "0 10px 25px rgba(39, 174, 96, 0.3)";
+            btn.style.boxShadow = "0 10px 25px rgba(46, 204, 113, 0.4)";
         }
     }
 
@@ -177,20 +185,29 @@
             let itm = cart[k]; total += itm.price * itm.qty; savings += (itm.mrp - itm.price) * itm.qty;
             let row = `<div class="item-row"><div><b>${itm.name}</b><br>`;
             if(currentMode === 'counter') {
-                row += `<small>Rate: <input type="number" class="edit-input" value="${itm.price}" oninput="cart['${k}'].price=this.value; renderCart()"></small></div>
-                        <div style="display:flex; gap:5px;"><button class="qty-btn" onclick="cart['${k}'].qty--; renderCart()">-</button>
-                        <input type="number" class="edit-input" value="${itm.qty}" oninput="cart['${k}'].qty=this.value; renderCart()">
-                        <button class="qty-btn" onclick="cart['${k}'].qty++; renderCart()">+</button></div>`;
+                row += `<small>Rate: <input type="number" class="edit-input" style="width:55px" value="${itm.price}" oninput="cart['${k}'].price=this.value; renderCart()"></small></div>
+                        <div style="display:flex; gap:8px;"><button class="qty-btn" onclick="updateQty('${k}', -1)">-</button>
+                        <input type="number" class="edit-input" style="width:40px; font-weight:900;" value="${itm.qty}" oninput="cart['${k}'].qty=this.value; renderCart()">
+                        <button class="qty-btn" onclick="updateQty('${k}', 1)">+</button></div>`;
             } else {
-                row += `<small>₹${itm.price}</small></div>
-                        <div><button class="qty-btn" onclick="cart['${k}'].qty--; if(cart['${k}'].qty<=0) delete cart['${k}']; renderCart()">-</button>
-                        <span style="font-weight:bold; margin:0 10px;">${itm.qty}</span></div>`;
+                row += `<small>Rate: ₹${itm.price}</small></div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                        <button class="qty-btn" onclick="updateQty('${k}', -1)">−</button>
+                        <span style="font-weight:900; font-size:22px;">${itm.qty}</span></div>`;
             }
             list.innerHTML += row + `</div>`;
         }
         document.getElementById('sum-total').innerText = Math.round(total);
         document.getElementById('sum-savings').innerText = Math.round(savings);
         document.getElementById('savings-box').style.display = savings > 0 ? 'block' : 'none';
+    }
+
+    function updateQty(key, delta) {
+        if(cart[key]) {
+            cart[key].qty = Math.max(0, parseInt(cart[key].qty) + delta);
+            if(cart[key].qty <= 0) delete cart[key];
+            renderCart();
+        }
     }
 
     function showReceipt() {
@@ -201,13 +218,12 @@
         for(let k in cart) {
             let itm = cart[k]; let line = itm.price * itm.qty; sub += line;
             gst += line - (line / (1 + (itm.tax/100)));
-            list.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:9pt;"><span>${itm.name} x${itm.qty}</span><span>Rs ${Math.round(line)}</span></div>`;
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${itm.name} x${itm.qty}</span><span>Rs ${Math.round(line)}</span></div>`;
         }
         document.getElementById('gst-header').style.display = isTax ? 'block' : 'none';
         document.getElementById('r-gst-line').style.display = isTax ? 'block' : 'none';
         document.getElementById('r-gst').innerText = gst.toFixed(2);
         document.getElementById('r-total').innerText = Math.round(sub);
-        document.getElementById('r-save').innerText = document.getElementById('sum-savings').innerText;
         document.getElementById('receipt-modal').style.display = 'flex';
     }
 </script>
