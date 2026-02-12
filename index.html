@@ -10,15 +10,15 @@
         :root { --primary: #2ecc71; --gold: #f1c40f; --danger: #e74c3c; --dark: #000; }
         body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
         
-        /* Entrance with Glowing Logo */
+        /* Entrance */
         #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; }
         .logo-glow { position: absolute; width: 320px; height: 320px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; animation: pulseGlow 3s infinite; }
-        .logo-main { width: 280px; height: auto; position: relative; z-index: 2; }
+        .logo-main { width: 280px; height: auto; position: relative; z-index: 2; border-radius: 50%; }
         @keyframes pulseGlow { 0%, 100% { transform: scale(0.9); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.8; } }
         
         .self-check-btn { background: #000; color: #fff; width: 100%; max-width: 360px; padding: 22px; border-radius: 50px; font-size: 22px; font-weight: 800; border: 2px solid #333; cursor: pointer; text-transform: uppercase; margin-top: 40px; }
 
-        /* Main App Display */
+        /* Main App */
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 20vh; background: #000; position: relative; border-bottom: 4px solid var(--primary); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
@@ -27,11 +27,12 @@
         .item-list { flex: 1; overflow-y: auto; color: #000; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; font-weight: 700; }
         
-        /* Unified Hero Savings */
+        /* Savings Hero */
         .savings-hero { background: #e8f5e9; padding: 15px; border-radius: 20px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 10px; }
         .savings-hero b { font-size: 65px; color: var(--primary); font-weight: 900; display: flex; justify-content: center; align-items: center; }
 
         .total-row { font-size: 32px; font-weight: 900; display: flex; justify-content: space-between; padding: 15px 5px; border-top: 3px solid #000; }
+        .qty-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 12px; font-weight: 800; font-size: 24px; color: #000; cursor: pointer; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
         .popup { background:#fff; padding:35px; border-radius:40px; width:85%; max-width: 420px; text-align: center; color: #000; }
@@ -43,19 +44,19 @@
 
 <div id="entrance-screen">
     <div class="logo-glow"></div>
-    <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main" id="home-logo">
+    <img src="https://cdn-icons-png.flaticon.com/512/10579/10579758.png" class="logo-main">
     <button class="self-check-btn" onclick="startApp('self')">Start Self Checkout</button>
-    <div style="position:absolute; top:20px; right:20px; color:#333; font-size:10px;" onclick="startApp('counter')">ADMIN</div>
+    <div style="position:absolute; top:20px; right:20px; color:#333; font-size:10px; cursor:pointer;" onclick="startApp('counter')">ADMIN</div>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <button style="position:absolute; top:12px; left:15px; padding:10px; border-radius:30px; border:none; background:rgba(255,255,255,0.2); color:#fff;" onclick="location.reload()">EXIT</button>
+        <button style="position:absolute; top:12px; left:15px; padding:10px; border-radius:30px; border:none; background:rgba(255,255,255,0.2); color:#fff; cursor:pointer;" onclick="location.reload()">EXIT</button>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
         <div id="admin-tools" style="display:none; padding-bottom:10px;">
-            <label><input type="checkbox" id="tax-toggle" onchange="renderCart()"> GST BILLING</label>
+            <label style="font-weight:bold; cursor:pointer;"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> GST BILLING</label>
         </div>
         <div class="item-list" id="cart-items"></div>
         <div class="savings-hero" id="savings-box">
@@ -67,10 +68,20 @@
     </div>
 </div>
 
+<div id="qty-modal" class="modal"><div class="popup">
+    <h2 id="pop-name" style="font-weight:900;">Product</h2>
+    <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:30px 0;">
+        <button class="qty-btn" onclick="updateTempQty(-1)">−</button>
+        <span id="pop-qty" style="font-size:55px; font-weight:900;">1</span>
+        <button class="qty-btn" style="background:var(--primary); color:#fff;" onclick="updateTempQty(1)">+</button>
+    </div>
+    <button class="self-check-btn" style="background:#2ecc71; border:none; margin-top:0;" onclick="addFromPopup()">ADD TO BILL</button>
+</div></div>
+
 <div id="receipt-modal" class="modal"><div class="popup" style="padding:25px; border-radius: 30px;">
     <div id="receipt-box" style="width:58mm; margin:0 auto; font-family:monospace; text-align:left; font-size:10pt; color: #000 !important;">
         <center>
-            <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:60px; border-radius:50%;">
+            <img src="https://cdn-icons-png.flaticon.com/512/10579/10579758.png" style="width:60px; border-radius:50%;">
             <h3 style="margin:5px 0; font-weight: 900;">HIMALAYAN GLORY</h3>
             <div id="gst-header" style="font-size:7pt; font-weight:bold; display:none;">TAX INVOICE | GST: 02ERLPS7511E1ZT</div>
             <hr style="border:0.5px dashed #000; margin: 10px 0;">
@@ -91,7 +102,7 @@
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
     
     let inventory = {}, cart = {}, currentMode = 'self', isScanning = true;
-    let lastScan = null, lastTime = 0;
+    let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
 
     async function init() {
         const res = await fetch(SHEET_CSV);
@@ -115,7 +126,8 @@
             pred.forEach(p => { if(p.probability > top.probability) top = p; });
             if(top.probability > 0.98 && top.className !== "Background") {
                 if(top.className !== lastScan || (Date.now() - lastTime) > 3000) {
-                    handleScan(top.className); lastScan = top.className; lastTime = Date.now();
+                    // FIX: Correctly triggers pop-up instead of adding directly
+                    triggerPop(top.className); lastScan = top.className; lastTime = Date.now();
                 }
             } else if (top.className === "Background") { lastScan = null; }
             requestAnimationFrame(loop);
@@ -131,12 +143,25 @@
         init();
     }
 
-    function handleScan(id) {
+    function triggerPop(id) {
         if(!inventory[id]) return;
-        if(cart[id]) cart[id].qty++; 
-        else { cart[id] = JSON.parse(JSON.stringify(inventory[id])); cart[id].qty = 1; }
+        tempItem = inventory[id]; tempItem.id = id; tempQty = 1; isScanning = false;
+        document.getElementById('pop-name').innerText = tempItem.name;
+        document.getElementById('pop-qty').innerText = tempQty;
+        document.getElementById('qty-modal').style.display = 'flex';
         new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3').play();
-        renderCart();
+    }
+
+    function updateTempQty(v) {
+        tempQty = Math.max(1, tempQty + v);
+        document.getElementById('pop-qty').innerText = tempQty;
+    }
+
+    function addFromPopup() {
+        const id = tempItem.id;
+        if(cart[id]) cart[id].qty += tempQty; else { cart[id] = JSON.parse(JSON.stringify(tempItem)); cart[id].qty = tempQty; }
+        document.getElementById('qty-modal').style.display = 'none';
+        isScanning = true; renderCart();
     }
 
     function renderCart() {
@@ -147,9 +172,9 @@
             list.innerHTML += `<div class="item-row">
                 <span>${idx}. ${itm.name}</span>
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <button onclick="updateQty('${k}', -1)" style="padding:10px; border:none;">−</button>
+                    <button class="qty-btn" onclick="updateQty('${k}', -1)">−</button>
                     <span style="font-weight:900;">${itm.qty}</span>
-                    <button onclick="updateQty('${k}', 1)" style="padding:10px; border:none; background:var(--primary); color:#fff;">+</button>
+                    <button class="qty-btn" style="background:var(--primary); color:#fff;" onclick="updateQty('${k}', 1)">+</button>
                 </div>
             </div>`;
             idx++;
