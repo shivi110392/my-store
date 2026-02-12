@@ -10,33 +10,28 @@
         :root { --primary: #2ecc71; --gold: #f1c40f; --danger: #e74c3c; --dark: #000; }
         body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
         
-        /* Premium Entrance */
-        #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; text-align: center; }
-        .staff-link { position: absolute; top: 25px; right: 25px; font-size: 10px; color: #444; cursor: pointer; letter-spacing: 2px; text-transform: uppercase; }
+        /* Entrance with Glowing Logo */
+        #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; }
+        .logo-glow { position: absolute; width: 320px; height: 320px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; animation: pulseGlow 3s infinite; }
+        .logo-main { width: 280px; height: auto; position: relative; z-index: 2; }
+        @keyframes pulseGlow { 0%, 100% { transform: scale(0.9); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.8; } }
         
-        .logo-container { position: relative; margin-bottom: 30px; }
-        .logo-main { width: 280px; height: auto; position: relative; z-index: 2; border-radius: 50%; }
-        .logo-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: 1; animation: pulseGlow 3s infinite; }
+        .self-check-btn { background: #000; color: #fff; width: 100%; max-width: 360px; padding: 22px; border-radius: 50px; font-size: 22px; font-weight: 800; border: 2px solid #333; cursor: pointer; text-transform: uppercase; margin-top: 40px; }
 
-        @keyframes pulseGlow { 0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.9); } 50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); } }
-        
-        .self-check-btn { background: #000; color: #fff; width: 100%; max-width: 360px; padding: 22px; border-radius: 50px; font-size: 22px; font-weight: 800; border: 2px solid #333; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* Main App */
+        /* Main App Display */
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 20vh; background: #000; position: relative; border-bottom: 4px solid var(--primary); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
 
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
         .item-list { flex: 1; overflow-y: auto; color: #000; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #eee; font-weight: 600; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; font-weight: 700; }
         
         /* Unified Hero Savings */
         .savings-hero { background: #e8f5e9; padding: 15px; border-radius: 20px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 10px; }
         .savings-hero b { font-size: 65px; color: var(--primary); font-weight: 900; display: flex; justify-content: center; align-items: center; }
 
-        .total-row { font-size: 32px; font-weight: 900; color: #000; display: flex; justify-content: space-between; padding: 15px 5px; border-top: 3px solid #000; }
-        .qty-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 12px; font-weight: 800; font-size: 24px; color: #000; }
+        .total-row { font-size: 32px; font-weight: 900; display: flex; justify-content: space-between; padding: 15px 5px; border-top: 3px solid #000; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
         .popup { background:#fff; padding:35px; border-radius:40px; width:85%; max-width: 420px; text-align: center; color: #000; }
@@ -47,22 +42,20 @@
 <body>
 
 <div id="entrance-screen">
-    <div class="staff-link" onclick="startApp('counter')">Staff Only</div>
-    <div class="logo-container">
-        <div class="logo-glow"></div>
-        <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
-    </div>
+    <div class="logo-glow"></div>
+    <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main" id="home-logo">
     <button class="self-check-btn" onclick="startApp('self')">Start Self Checkout</button>
+    <div style="position:absolute; top:20px; right:20px; color:#333; font-size:10px;" onclick="startApp('counter')">ADMIN</div>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <button style="position:absolute; top:12px; left:15px; padding:10px 18px; border-radius:30px; border:none; color:#fff; background:rgba(255,255,255,0.2); font-weight:800;" onclick="location.reload()">EXIT</button>
+        <button style="position:absolute; top:12px; left:15px; padding:10px; border-radius:30px; border:none; background:rgba(255,255,255,0.2); color:#fff;" onclick="location.reload()">EXIT</button>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
-        <div id="admin-tools" style="display:none; padding-bottom:15px;">
-            <label style="font-weight:800;"><input type="checkbox" id="tax-toggle" onchange="renderCart()"> ACTIVATE GST INVOICE</label>
+        <div id="admin-tools" style="display:none; padding-bottom:10px;">
+            <label><input type="checkbox" id="tax-toggle" onchange="renderCart()"> GST BILLING</label>
         </div>
         <div class="item-list" id="cart-items"></div>
         <div class="savings-hero" id="savings-box">
@@ -70,37 +63,27 @@
             <b>₹<span id="sum-savings">0</span></b>
         </div>
         <div class="total-row"><span>TO PAY</span><span>₹<span id="sum-total">0</span></span></div>
-        <button class="self-check-btn" style="background:#2ecc71; border:none; border-radius:20px;" onclick="showReceipt()">PAY & PRINT</button>
+        <button class="self-check-btn" style="background:#2ecc71; border:none; margin:10px 0;" onclick="showReceipt()">PAY & PRINT</button>
     </div>
 </div>
 
-<div id="qty-modal" class="modal"><div class="popup">
-    <h2 id="pop-name" style="font-weight:900;">Product</h2>
-    <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:30px 0;">
-        <button class="qty-btn" style="width:70px; height:70px;" onclick="updateTempQty(-1)">−</button>
-        <span id="pop-qty" style="font-size:55px; font-weight:900;">1</span>
-        <button class="qty-btn" style="width:70px; height:70px; background:var(--primary); color:#fff;" onclick="updateTempQty(1)">+</button>
-    </div>
-    <button id="add-btn" class="self-check-btn" style="background:#2ecc71; border:none; border-radius:20px;" onclick="addFromPopup()">ADD TO BILL</button>
-</div></div>
-
 <div id="receipt-modal" class="modal"><div class="popup" style="padding:25px; border-radius: 30px;">
-    <div id="receipt-box" style="width:58mm; margin:0 auto; font-family:monospace; text-align:left; font-size:10pt; color: #000;">
+    <div id="receipt-box" style="width:58mm; margin:0 auto; font-family:monospace; text-align:left; font-size:10pt; color: #000 !important;">
         <center>
-            <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:60px; height:60px; border-radius:50%;">
+            <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:60px; border-radius:50%;">
             <h3 style="margin:5px 0; font-weight: 900;">HIMALAYAN GLORY</h3>
-            <div id="gst-header" style="font-size:7pt; font-weight:bold;">TAX INVOICE | GST: 02ERLPS7511E1ZT</div>
+            <div id="gst-header" style="font-size:7pt; font-weight:bold; display:none;">TAX INVOICE | GST: 02ERLPS7511E1ZT</div>
             <hr style="border:0.5px dashed #000; margin: 10px 0;">
         </center>
         <div id="r-items"></div>
         <hr style="border:0.5px dashed #000;">
         <div style="text-align:right; font-weight:bold;">
-            <div id="r-gst-line" style="font-size:8pt;">GST Included: Rs <span id="r-gst">0</span></div>
+            <div id="r-gst-line" style="font-size:8pt; display:none;">GST Included: Rs <span id="r-gst">0</span></div>
             <div style="font-size:14pt; margin-top:5px;">TOTAL: Rs <span id="r-total">0</span></div>
         </div>
         <center style="font-size: 7pt; margin-top: 15px;">SHIMLA SECTOR-2 • VISIT AGAIN</center>
     </div>
-    <button class="self-check-btn" style="background:#2ecc71; border:none; margin-top:20px; border-radius:20px;" onclick="window.print(); location.reload();">PRINT & FINISH</button>
+    <button class="self-check-btn" style="background:#2ecc71; border:none; margin-top:20px;" onclick="window.print(); location.reload();">PRINT & FINISH</button>
 </div></div>
 
 <script>
@@ -108,7 +91,7 @@
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
     
     let inventory = {}, cart = {}, currentMode = 'self', isScanning = true;
-    let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
+    let lastScan = null, lastTime = 0;
 
     async function init() {
         const res = await fetch(SHEET_CSV);
@@ -132,7 +115,7 @@
             pred.forEach(p => { if(p.probability > top.probability) top = p; });
             if(top.probability > 0.98 && top.className !== "Background") {
                 if(top.className !== lastScan || (Date.now() - lastTime) > 3000) {
-                    triggerPop(top.className); lastScan = top.className; lastTime = Date.now();
+                    handleScan(top.className); lastScan = top.className; lastTime = Date.now();
                 }
             } else if (top.className === "Background") { lastScan = null; }
             requestAnimationFrame(loop);
@@ -148,52 +131,38 @@
         init();
     }
 
-    function triggerPop(id) {
+    function handleScan(id) {
         if(!inventory[id]) return;
-        tempItem = inventory[id]; tempItem.id = id; tempQty = 1; isScanning = false;
-        document.getElementById('pop-name').innerText = tempItem.name;
-        document.getElementById('pop-qty').innerText = tempQty;
-        document.getElementById('qty-modal').style.display = 'flex';
-    }
-
-    function updateTempQty(v) {
-        tempQty = Math.max(1, tempQty + v);
-        document.getElementById('pop-qty').innerText = tempQty;
-    }
-
-    function addFromPopup() {
-        const id = tempItem.id;
-        if(cart[id]) cart[id].qty += tempQty; else { cart[id] = JSON.parse(JSON.stringify(tempItem)); cart[id].qty = tempQty; }
-        document.getElementById('qty-modal').style.display = 'none';
-        isScanning = true; renderCart();
+        if(cart[id]) cart[id].qty++; 
+        else { cart[id] = JSON.parse(JSON.stringify(inventory[id])); cart[id].qty = 1; }
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3').play();
+        renderCart();
     }
 
     function renderCart() {
         const list = document.getElementById('cart-items'); list.innerHTML = '';
-        let total = 0, savings = 0;
-        let idx = 1;
+        let total = 0, savings = 0, idx = 1;
         for (let k in cart) {
             let itm = cart[k]; total += itm.price * itm.qty; savings += (itm.mrp - itm.price) * itm.qty;
             list.innerHTML += `<div class="item-row">
                 <span>${idx}. ${itm.name}</span>
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <button class="qty-btn" onclick="updateQty('${k}', -1)">−</button>
+                    <button onclick="updateQty('${k}', -1)" style="padding:10px; border:none;">−</button>
                     <span style="font-weight:900;">${itm.qty}</span>
-                    <button class="qty-btn" style="background:var(--primary); color:#fff;" onclick="updateQty('${k}', 1)">+</button>
+                    <button onclick="updateQty('${k}', 1)" style="padding:10px; border:none; background:var(--primary); color:#fff;">+</button>
                 </div>
             </div>`;
             idx++;
         }
         document.getElementById('sum-total').innerText = Math.round(total);
         document.getElementById('sum-savings').innerText = Math.round(savings);
+        document.getElementById('savings-box').style.display = savings > 0 ? 'block' : 'none';
     }
 
-    function updateQty(key, delta) {
-        if(cart[key]) {
-            cart[key].qty = Math.max(0, parseInt(cart[key].qty) + delta);
-            if(cart[key].qty <= 0) delete cart[key];
-            renderCart();
-        }
+    function updateQty(k, d) {
+        cart[k].qty = Math.max(0, cart[k].qty + d);
+        if(cart[k].qty <= 0) delete cart[k];
+        renderCart();
     }
 
     function showReceipt() {
@@ -204,7 +173,7 @@
         for(let k in cart) {
             let itm = cart[k]; let line = itm.price * itm.qty; sub += line;
             gst += line - (line / (1 + (itm.tax/100)));
-            list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                 <span>${idx}. ${itm.name} x${itm.qty}</span><span>Rs ${Math.round(line)}</span>
             </div>`;
             idx++;
