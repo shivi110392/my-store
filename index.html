@@ -15,28 +15,29 @@
         .logo-main { width: 280px; height: 280px; border-radius: 50%; border: 4px solid #333; margin-bottom: 40px; }
         .self-check-btn { background: #000; color: #fff; width: 100%; max-width: 360px; padding: 22px; border-radius: 50px; font-size: 22px; font-weight: 800; border: 2px solid #333; cursor: pointer; text-transform: uppercase; }
 
-        /* Main App */
+        /* Main App UI */
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 20vh; background: #000; position: relative; border-bottom: 4px solid var(--primary); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         
-        /* New Progress Bar */
         #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 10px; background: rgba(255,255,255,0.1); z-index: 20; }
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.1s; }
 
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .item-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+        .item-list { flex: 1; overflow-y: auto; color: #000; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; font-weight: 700; font-size: 18px; }
         
-        /* Unified Hero Savings */
+        /* Savings Display */
         .savings-hero { background: #e8f5e9; padding: 15px; border-radius: 20px; text-align: center; border: 2px dashed var(--primary); margin-bottom: 10px; }
-        .savings-hero b { font-size: 65px; color: var(--primary); font-weight: 900; }
+        .savings-hero b { font-size: 65px; color: var(--primary); font-weight: 900; display: flex; justify-content: center; align-items: center; }
 
         .total-row { font-size: 32px; font-weight: 900; display: flex; justify-content: space-between; padding: 15px 5px; border-top: 3px solid #000; }
-        .qty-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 12px; font-weight: 800; font-size: 24px; color: #000; cursor: pointer; }
+        .qty-btn { width: 45px; height: 45px; border: none; background: #f0f0f0; border-radius: 12px; font-weight: 800; font-size: 24px; color: #000; }
 
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
         .popup { background:#fff; padding:35px; border-radius:40px; width:85%; max-width: 420px; text-align: center; color: #000; }
+
+        @media print { body * { visibility: hidden; } #receipt-box, #receipt-box * { visibility: visible; } #receipt-box { position: absolute; left: 0; top: 0; width: 58mm; color: #000 !important; } }
     </style>
 </head>
 <body>
@@ -81,13 +82,13 @@
             <div style="font-size:7pt; font-weight:bold;">TAX INVOICE | GST: 02ERLPS7511E1ZT</div>
             <hr style="border:0.5px dashed #000; margin:10px 0;">
         </center>
-        <div id="r-items"></div>
+        <div id="r-items" style="color: #000;"></div>
         <hr style="border:0.5px dashed #000;">
         <div style="text-align:right; font-weight:bold;">
             <div style="font-size:8pt;">GST Included: Rs <span id="r-gst">0</span></div>
             <div style="font-size:14pt; margin-top:5px;">TOTAL: Rs <span id="r-total">0</span></div>
         </div>
-        <center style="font-size:7pt; margin-top:15px; color:#444;">SHIMLA SECTOR-2 • VISIT AGAIN</center>
+        <center style="font-size: 7pt; margin-top: 15px; color: #444;">SHIMLA SECTOR-2 • VISIT AGAIN</center>
     </div>
     <button class="self-check-btn" style="background:#2ecc71; border:none; margin-top:20px; border-radius:20px;" onclick="window.print(); location.reload();">PRINT & FINISH</button>
 </div></div>
@@ -95,7 +96,7 @@
 <script>
     const TEACHABLE_URL = "https://teachablemachine.withgoogle.com/models/bZtta4RfC/"; 
     const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv";
-    const CONFIDENCE_THRESHOLD = 0.85; 
+    const CONFIDENCE_THRESHOLD = 0.75; 
 
     let inventory = {}, cart = {}, isScanning = true;
     let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
@@ -119,14 +120,12 @@
         async function loop() {
             if(!isScanning) { 
                 document.getElementById('progress-bar').style.width = '0%';
-                requestAnimationFrame(loop); 
-                return; 
+                requestAnimationFrame(loop); return; 
             }
             const pred = await model.predict(video);
-            let top = { probability: 0, className: "" };
-            pred.forEach(p => { if(p.probability > top.probability) top = p; });
+            pred.sort((a, b) => b.probability - a.probability);
+            let top = pred[0];
 
-            // Update Progress Bar based on confidence
             if(top.className !== "Background") {
                 let progress = (top.probability / CONFIDENCE_THRESHOLD) * 100;
                 document.getElementById('progress-bar').style.width = Math.min(progress, 100) + '%';
@@ -137,8 +136,7 @@
             if(top.probability > CONFIDENCE_THRESHOLD && top.className !== "Background") {
                 if(top.className !== lastScan || (Date.now() - lastTime) > 3000) {
                     triggerPop(top.className); 
-                    lastScan = top.className; 
-                    lastTime = Date.now();
+                    lastScan = top.className; lastTime = Date.now();
                 }
             } else if (top.className === "Background") { lastScan = null; }
             requestAnimationFrame(loop);
