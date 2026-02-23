@@ -7,16 +7,22 @@
     <style>
         :root { --primary: #2ecc71; --dark: #000; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
+        
         #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; }
         .logo-main { width: 150px; height: 150px; border-radius: 50%; border: 3px solid #333; margin-bottom: 20px; }
-        .btn-start { background: var(--primary); color: #000; width: 100%; padding: 22px; border-radius: 50px; font-size: 18px; font-weight: 800; border: none; }
+        .btn-start { background: var(--primary); color: #000; width: 100%; padding: 22px; border-radius: 50px; font-size: 18px; font-weight: 800; border: none; cursor: pointer; }
+
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 40vh; background: #000; position: relative; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
-        #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 8px 15px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; }
+        #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 8px 15px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
         
-        /* THE X-RAY DEBUG BOX */
-        #debug-box { position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(255,0,0,0.8); color: #fff; padding: 10px; border-radius: 10px; font-family: monospace; font-size: 10px; z-index: 100; word-wrap: break-word; max-height: 80px; overflow: hidden; }
+        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .item-list { flex: 1; overflow-y: auto; text-align: center; color: #999; padding-top: 20px; }
+        .total-box { background: #f9f9f9; padding: 20px; border-radius: 20px; border: 1px solid #eee; display: flex; justify-content: space-between; font-weight: 900; font-size: 30px; }
+        
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; }
+        .popup { background:#fff; padding:30px; border-radius:30px; width:85%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
@@ -24,43 +30,74 @@
 <div id="entrance-screen">
     <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
     <h1>HIMALAYAN GLORY</h1>
-    <button class="btn-start" onclick="launchPOS()">START DIAGNOSTIC</button>
+    <button class="btn-start" onclick="launchPOS()">START SYSTEM</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <div id="debug-box">Waiting for Roboflow server...</div>
         <div id="status-bar">AI Status: Offline</div>
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="snapshot" style="display:none;"></canvas>
     </div>
-    <div id="billing-section" style="padding: 20px; text-align: center;">
-        <h3 style="color:#666; margin-top: 50px;">Look at the red box on the camera</h3>
-        <p style="color:#999;">Tell me what text appears inside it.</p>
+    <div id="billing-section">
+        <div id="cart-items" class="item-list">Scan a product...</div>
+        <div class="total-box"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
+        <button class="btn-start" style="width:100%; margin-top:15px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
+    </div>
+</div>
+
+<div id="qty-modal" class="modal">
+    <div class="popup">
+        <h2 id="pop-name" style="color:#000;">Product</h2>
+        <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:25px 0; color:#000;">
+            <button style="width:55px; height:55px; border-radius:50%; border:1px solid #ccc;" onclick="updateTempQty(-1)">−</button>
+            <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
+            <button style="width:55px; height:55px; border-radius:50%; background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
+        </div>
+        <button class="btn-start" style="width:100%;" onclick="addToCart()">ADD TO BILL</button>
     </div>
 </div>
 
 <script>
     const CONFIG = {
-        apiKey: "8n3ZmJUiFbggayPObv7S", 
+        apiKey: "8n3ZmJUiFbggayPObv7S",
         workspace: "hgmm-pos",          
-        workflow: "find-cadbury-dairy-milk-10s" 
+        workflow: "find-cadbury-dairy-milk-10s", 
+        sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
     };
 
-    let isScanning = true;
+    let inventory = {}, cart = {}, isScanning = true;
+    let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
     const status = document.getElementById('status-bar');
-    const debugBox = document.getElementById('debug-box');
 
     async function launchPOS() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } 
+            });
             document.getElementById('entrance-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('webcam').srcObject = stream;
             
+            await fetchInventory();
             status.innerText = "AI Online: Searching...";
             runInferenceLoop();
-        } catch (err) { alert("Camera Error"); }
+        } catch (err) { alert("Camera Permission Error"); }
+    }
+
+    async function fetchInventory() {
+        try {
+            const res = await fetch(CONFIG.sheet);
+            const text = await res.text();
+            text.split('\n').slice(1).forEach(row => {
+                const c = row.split(',');
+                if(c[0]) {
+                    // CLEANER: Removes spaces AND dashes to match your AI label
+                    const id = c[0].trim().toLowerCase().replace(/[\s-]/g, '');
+                    inventory[id] = { name: c[0].trim(), mrp: parseFloat(c[5])||0, price: parseFloat(c[6])||0 };
+                }
+            });
+        } catch(e) { console.error("Sheet Error"); }
     }
 
     async function runInferenceLoop() {
@@ -71,8 +108,7 @@
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
         canvas.getContext('2d').drawImage(video, 0, 0);
-        
-        const base64Image = canvas.toDataURL('image/jpeg', 0.4).split(',')[1];
+        const base64Image = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]; // Higher quality
 
         try {
             const response = await fetch(`https://serverless.roboflow.com/${CONFIG.workspace}/workflows/${CONFIG.workflow}`, {
@@ -86,21 +122,69 @@
 
             const result = await response.json();
             
-            // X-RAY VISION: Print the exact data to the screen
-            debugBox.innerText = JSON.stringify(result);
-
-            // Attempting to guess the structure
-            if (result.outputs) {
-                status.innerText = "Data received, analyzing structure...";
-            } else {
-                status.innerText = "AI Online: Searching...";
+            // X-RAY PATH: result.outputs[0].predictions.predictions
+            if (result.outputs && result.outputs[0] && result.outputs[0].predictions && result.outputs[0].predictions.predictions) {
+                const predictions = result.outputs[0].predictions.predictions;
+                
+                if (predictions.length > 0) {
+                    const pred = predictions[0]; // Take the top result
+                    
+                    // THRESHOLD LOWERED TO 40%
+                    if (pred.confidence > 0.40) {
+                        status.innerText = `Seeing: ${pred.class} (${Math.round(pred.confidence * 100)}%)`;
+                        
+                        // Clean the AI label: "cadbury dairy milk a--10" -> "cadburydairymilka10"
+                        const cleanKey = pred.class.toLowerCase().replace(/[\s-]/g, '');
+                        
+                        // Check match logic
+                        if (inventory[cleanKey]) {
+                            if (pred.class !== lastScan || Date.now() - lastTime > 3000) {
+                                isScanning = false;
+                                openQtyPopup(cleanKey);
+                                lastScan = pred.class; lastTime = Date.now();
+                            }
+                        } else {
+                            // SHOW USER EXACTLY WHAT TO TYPE IN SHEET
+                            status.innerText = `Sheet Mismatch! Rename Col A to: "${cleanKey}"`;
+                        }
+                    } else {
+                        status.innerText = `Low Confidence: ${Math.round(pred.confidence*100)}%`;
+                    }
+                } else {
+                    status.innerText = "Scanning...";
+                }
             }
+        } catch (e) { status.innerText = "Retrying..."; }
 
-        } catch (e) { 
-            debugBox.innerText = "NETWORK ERROR: " + e.message; 
+        setTimeout(runInferenceLoop, 600);
+    }
+
+    function openQtyPopup(key) {
+        tempItem = inventory[key]; tempQty = 1;
+        document.getElementById('pop-name').innerText = tempItem.name;
+        document.getElementById('pop-qty').innerText = tempQty;
+        document.getElementById('qty-modal').style.display = 'flex';
+    }
+
+    function updateTempQty(v) { tempQty = Math.max(1, tempQty + v); document.getElementById('pop-qty').innerText = tempQty; }
+
+    function addToCart() {
+        const id = tempItem.name;
+        if(cart[id]) cart[id].qty += tempQty;
+        else cart[id] = { ...tempItem, qty: tempQty };
+        document.getElementById('qty-modal').style.display = 'none';
+        isScanning = true; renderCart();
+    }
+
+    function renderCart() {
+        const list = document.getElementById('cart-items'); list.innerHTML = '';
+        let total = 0;
+        for (const k in cart) {
+            const itm = cart[k]; total += itm.price * itm.qty;
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee; color:#000;">
+                <span>${itm.name} x${itm.qty}</span><b>₹${Math.round(itm.price*itm.qty)}</b></div>`;
         }
-
-        setTimeout(runInferenceLoop, 1000);
+        document.getElementById('sum-total').innerText = Math.round(total);
     }
 </script>
 </body>
