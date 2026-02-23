@@ -3,95 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Digitz7 | Himalayan Glory POS</title>
+    <title>Himalayan Glory POS</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@roboflow/inference-sdk@0.2.0/dist/inference-sdk.min.js"></script>
 
     <style>
-        :root { --primary: #2ecc71; --dark: #000; --text-gray: #bdc3c7; }
-        body { font-family: 'Inter', system-ui, sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
+        :root { --primary: #2ecc71; --dark: #000; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
         
-        /* Loading/Entrance Screen */
+        /* Entrance Screen */
         #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
         .logo-main { width: 220px; height: 220px; border-radius: 50%; border: 3px solid #333; margin-bottom: 30px; object-fit: cover; }
-        .btn-start { background: var(--primary); color: #000; width: 100%; max-width: 300px; padding: 20px; border-radius: 50px; font-size: 20px; font-weight: 800; border: none; cursor: pointer; transition: transform 0.2s; }
+        .btn-start { background: var(--primary); color: #000; width: 100%; max-width: 300px; padding: 20px; border-radius: 50px; font-size: 20px; font-weight: 800; border: none; cursor: pointer; }
 
         /* Main App Interface */
         #main-app { display: none; height: 100vh; flex-direction: column; background: #f9f9f9; color: #000; }
         
         /* Camera UI */
-        #camera-section { height: 30vh; background: #000; position: relative; overflow: hidden; }
-        #webcam { width: 100%; height: 100%; object-fit: cover; }
-        #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: rgba(255,255,255,0.1); }
-        #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.1s; }
+        #camera-section { height: 35vh; background: #000; position: relative; overflow: hidden; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; background: #222; }
+        #progress-bar { position: absolute; top: 0; left: 0; width: 0%; height: 6px; background: var(--primary); transition: width 0.1s; z-index: 10; }
 
         /* Billing Area */
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
         .item-list { flex: 1; overflow-y: auto; margin-bottom: 15px; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #eee; }
-        .item-info b { font-size: 18px; display: block; }
-        .item-info span { font-size: 14px; color: #7f8c8d; }
-        .item-price { font-weight: 800; font-size: 18px; }
-
-        /* Calculation Footer */
         .summary-card { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
         .savings-badge { background: #e8f5e9; color: #27ae60; padding: 10px; border-radius: 12px; text-align: center; margin-bottom: 15px; border: 1px dashed #2ecc71; font-weight: 700; }
         .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 28px; font-weight: 900; }
 
-        /* Pop-up Modal */
+        /* Popup */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; }
         .popup { background:#fff; padding:30px; border-radius:30px; width:85%; max-width: 400px; text-align: center; }
-        .qty-ctrl { display:flex; justify-content:center; align-items:center; gap:30px; margin:25px 0; }
-        .circle-btn { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #ddd; font-size: 24px; font-weight: 800; cursor: pointer; background: #fff; }
     </style>
 </head>
 <body>
 
 <div id="entrance-screen">
     <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
-    <h1 style="margin-bottom: 40px; font-weight: 900; letter-spacing: -1px;">DIGITZ7 AI</h1>
-    <button class="btn-start" onclick="startSystem()">Initialize System</button>
+    <h2 style="margin-bottom: 40px; font-weight: 900; color: #fff;">HIMALAYAN GLORY</h2>
+    <button class="btn-start" onclick="startSystem()">OPEN SCANNER</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <div id="progress-container"><div id="progress-bar"></div></div>
+        <div id="progress-bar"></div>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
 
     <div id="billing-section">
         <div class="item-list" id="cart-items">
-            <div style="text-align:center; color:#ccc; margin-top:50px;">Scan items to begin...</div>
+            <div style="text-align:center; color:#ccc; margin-top:50px;">Point camera at product...</div>
         </div>
 
         <div class="summary-card">
             <div class="savings-badge" id="savings-box" style="display:none;">
-                YOU ARE SAVING ₹<span id="sum-savings">0</span> ON THIS BILL
+                TOTAL SAVINGS: ₹<span id="sum-savings">0</span>
             </div>
             <div class="total-row">
-                <span>TOTAL</span>
+                <span>PAYABLE</span>
                 <span>₹<span id="sum-total">0</span></span>
             </div>
-            <button class="btn-start" style="width:100%; max-width:none; margin-top:20px;" onclick="location.reload()">COMPLETE & RESET</button>
+            <button class="btn-start" style="width:100%; max-width:none; margin-top:20px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
         </div>
     </div>
 </div>
 
 <div id="qty-modal" class="modal">
     <div class="popup">
-        <h2 id="pop-name" style="margin:0; font-weight:900; color:#333;">Product</h2>
-        <p id="pop-pricing" style="color:#7f8c8d; margin-top:5px;"></p>
-        <div class="qty-ctrl">
-            <button class="circle-btn" onclick="updateTempQty(-1)">−</button>
+        <h2 id="pop-name" style="margin:0; font-weight:900;">Product</h2>
+        <div style="display:flex; justify-content:center; align-items:center; gap:30px; margin:25px 0;">
+            <button style="width:50px; height:50px; border-radius:50%; border:1px solid #ddd;" onclick="updateTempQty(-1)">−</button>
             <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
-            <button class="circle-btn" style="background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
+            <button style="width:50px; height:50px; border-radius:50%; background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
         </div>
         <button class="btn-start" style="width:100%;" onclick="addToCart()">ADD TO BILL</button>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
     const CONFIG = {
         roboflow: {
             apiKey: "8n3ZmJUiFbggayPObv7S",
@@ -101,36 +91,28 @@
         sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
     };
 
-    let inventory = {};
-    let cart = {};
-    let isScanning = true;
-    let tempItem = null, tempQty = 1;
-    let lastScan = null, lastTime = 0;
+    let inventory = {}, cart = {}, isScanning = true;
+    let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
 
-    // --- STEP 1: LOAD SHEET DATA (Using Columns 0, 5, 6, 20) ---
     async function fetchInventory() {
         try {
             const response = await fetch(CONFIG.sheet);
             const data = await response.text();
-            const rows = data.split('\n').slice(1); // Skip Header
-
-            rows.forEach(row => {
+            data.split('\n').slice(1).forEach(row => {
                 const cols = row.split(',');
                 if(cols[0]) {
                     const id = cols[0].trim();
                     inventory[id] = {
                         name: id,
-                        mrp: parseFloat(cols[5]) || 0,     // Column 5
-                        price: parseFloat(cols[6]) || 0,   // Column 6
-                        gst: parseFloat(cols[20]) || 18    // Column 20
+                        mrp: parseFloat(cols[5]) || 0,     // MRP Column 5
+                        price: parseFloat(cols[6]) || 0,   // Price Column 6
+                        gst: parseFloat(cols[20]) || 18    // GST Column 20
                     };
                 }
             });
-            console.log("Digitz7: Inventory Loaded", inventory);
-        } catch (e) { alert("Sheet Error: Make sure it is Published to Web as CSV."); }
+        } catch (e) { console.error("Inventory Load Error"); }
     }
 
-    // --- STEP 2: INITIALIZE APP ---
     async function startSystem() {
         document.getElementById('entrance-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
@@ -138,107 +120,83 @@
         initAI();
     }
 
-    // --- STEP 3: INITIALIZE ROBOFLOW AI ---
     async function initAI() {
-        const sdk = window.inference;
-        const stream = await sdk.streams.useCamera({ video: { facingMode: "environment" } });
-        const connector = sdk.connectors.withApiKey(CONFIG.roboflow.apiKey);
+        const video = document.getElementById('webcam');
+        
+        try {
+            const sdk = window.inference;
+            // Force higher priority on the environment (back) camera
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: { exact: "environment" } } 
+            }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
 
-        const connection = await sdk.webrtc.useStream({
-            source: stream,
-            connector,
-            wrtcParams: {
-                workspaceName: CONFIG.roboflow.workspace,
-                workflowId: CONFIG.roboflow.workflow,
-                imageInputName: "image",
-                dataOutputNames: ["predictions"]
-            },
-            onData: (data) => {
-                if(isScanning && data.predictions?.length > 0) processDetections(data.predictions[0]);
-            }
-        });
+            video.srcObject = stream;
 
-        document.getElementById('webcam').srcObject = await connection.remoteStream();
+            const connector = sdk.connectors.withApiKey(CONFIG.roboflow.apiKey);
+            const connection = await sdk.webrtc.useStream({
+                source: stream,
+                connector,
+                wrtcParams: {
+                    workspaceName: CONFIG.roboflow.workspace,
+                    workflowId: CONFIG.roboflow.workflow,
+                    imageInputName: "image",
+                    dataOutputNames: ["predictions"]
+                },
+                onData: (data) => {
+                    if(isScanning && data.predictions?.length > 0) handleInference(data.predictions[0]);
+                }
+            });
+        } catch (err) {
+            alert("Camera Error: Please allow camera access and use HTTPS.");
+        }
     }
 
-    // --- STEP 4: PROCESS DETECTIONS ---
-    function processDetections(pred) {
-        const bar = document.getElementById('progress-bar');
-        bar.style.width = (pred.confidence * 100) + '%';
-
-        // Check if High Confidence & Not Recently Scanned
+    function handleInference(pred) {
+        document.getElementById('progress-bar').style.width = (pred.confidence * 100) + '%';
         if(pred.confidence > 0.85 && pred.class !== "Background") {
             if(pred.class !== lastScan || (Date.now() - lastTime) > 4000) {
                 if(inventory[pred.class]) {
                     isScanning = false;
                     openQtyPopup(pred.class);
-                    lastScan = pred.class;
-                    lastTime = Date.now();
+                    lastScan = pred.class; lastTime = Date.now();
                 }
             }
         }
     }
 
-    // --- STEP 5: QUANTITY POPUP LOGIC ---
     function openQtyPopup(id) {
-        tempItem = inventory[id];
-        tempQty = 1;
+        tempItem = inventory[id]; tempQty = 1;
         document.getElementById('pop-name').innerText = tempItem.name;
-        document.getElementById('pop-pricing').innerText = `MRP: ₹${tempItem.mrp} | Our Price: ₹${tempItem.price}`;
         document.getElementById('pop-qty').innerText = tempQty;
         document.getElementById('qty-modal').style.display = 'flex';
     }
 
-    function updateTempQty(val) {
-        tempQty = Math.max(1, tempQty + val);
-        document.getElementById('pop-qty').innerText = tempQty;
-    }
+    function updateTempQty(v) { tempQty = Math.max(1, tempQty + v); document.getElementById('pop-qty').innerText = tempQty; }
 
     function addToCart() {
         const id = tempItem.name;
-        if(cart[id]) {
-            cart[id].qty += tempQty;
-        } else {
-            cart[id] = { ...tempItem, qty: tempQty };
-        }
+        if(cart[id]) cart[id].qty += tempQty;
+        else cart[id] = { ...tempItem, qty: tempQty };
         document.getElementById('qty-modal').style.display = 'none';
         isScanning = true;
         renderCart();
     }
 
-    // --- STEP 6: RENDER CART & CALCULATE TOTALS ---
     function renderCart() {
-        const list = document.getElementById('cart-items');
-        list.innerHTML = '';
-        let totalBill = 0;
-        let totalSavings = 0;
-
-        for (const key in cart) {
-            const itm = cart[key];
-            const lineTotal = itm.price * itm.qty;
-            const lineSavings = (itm.mrp - itm.price) * itm.qty;
-            
-            totalBill += lineTotal;
-            totalSavings += lineSavings;
-
-            list.innerHTML += `
-                <div class="item-row">
-                    <div class="item-info">
-                        <b>${itm.name}</b>
-                        <span>Qty: ${itm.qty} @ ₹${itm.price}</span>
-                    </div>
-                    <div class="item-price">₹${Math.round(lineTotal)}</div>
-                </div>`;
+        const list = document.getElementById('cart-items'); list.innerHTML = '';
+        let total = 0, savings = 0;
+        for (const k in cart) {
+            const itm = cart[k];
+            total += itm.price * itm.qty;
+            savings += (itm.mrp - itm.price) * itm.qty;
+            list.innerHTML += `<div class="item-row"><div><b>${itm.name}</b>x${itm.qty}</div><b>₹${itm.price * itm.qty}</b></div>`;
         }
-
-        document.getElementById('sum-total').innerText = Math.round(totalBill);
-        
-        if(totalSavings > 0) {
+        document.getElementById('sum-total').innerText = Math.round(total);
+        if(savings > 0) {
             document.getElementById('savings-box').style.display = 'block';
-            document.getElementById('sum-savings').innerText = Math.round(totalSavings);
+            document.getElementById('sum-savings').innerText = Math.round(savings);
         }
     }
 </script>
-
 </body>
 </html>
