@@ -15,14 +15,9 @@
         #camera-section { height: 35vh; background: #000; position: relative; overflow: hidden; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 6px 12px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
-        #progress-bar { position: absolute; top: 0; left: 0; width: 0%; height: 6px; background: var(--primary); transition: width 0.1s; z-index: 10; }
-        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .item-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 5px; border-bottom: 1px solid #eee; font-weight: 700; }
-        .summary-card { background: #f9f9f9; border-radius: 20px; padding: 20px; border: 1px solid #eee; }
-        .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 28px; font-weight: 900; }
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; }
-        .popup { background:#fff; padding:30px; border-radius:30px; width:85%; max-width: 400px; text-align: center; }
+        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+        .summary-card { background: #f9f9f9; border-radius: 20px; padding: 20px; border: 1px solid #eee; margin-top: auto; }
+        .total-row { display: flex; justify-content: space-between; font-size: 28px; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -30,88 +25,45 @@
 <div id="entrance-screen">
     <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
     <h2 style="margin-bottom: 30px; font-weight: 900;">HIMALAYAN GLORY</h2>
-    <button class="btn-start" onclick="startSystem()">LAUNCH POS</button>
+    <button class="btn-start" onclick="initSystem()">ENABLE CAMERA & START</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <div id="progress-bar"></div>
-        <div id="status-bar">System initializing...</div>
+        <div id="status-bar">Starting AI...</div>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
-        <div class="item-list" id="cart-items"><div style="text-align:center; color:#999; margin-top:50px;">Waiting for scan...</div></div>
+        <div id="cart-items" style="flex:1; overflow-y:auto; padding-top:20px; text-align:center; color:#999;">Scan items to begin...</div>
         <div class="summary-card">
-            <div id="savings-box" style="display:none; color:#27ae60; font-size:18px; font-weight:900; margin-bottom:10px; text-align:center;">SAVINGS: ₹<span id="sum-savings">0</span></div>
             <div class="total-row"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
             <button class="btn-start" style="width:100%; margin-top:20px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
         </div>
     </div>
 </div>
 
-<div id="qty-modal" class="modal"><div class="popup">
-    <h2 id="pop-name" style="font-weight: 900;">Item</h2>
-    <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:25px 0;">
-        <button style="width:55px; height:55px; border-radius:50%; border:1px solid #ccc;" onclick="updateTempQty(-1)">−</button>
-        <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
-        <button style="width:55px; height:55px; border-radius:50%; background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
-    </div>
-    <button class="btn-start" style="width:100%;" onclick="addToCart()">ADD TO BILL</button>
-</div></div>
-
 <script>
     const CONFIG = {
-        apiKey: "8n3ZmJUiFbggayPObv7S",
-        workspace: "hgmm-pos",
-        workflow: "find-cadbury-dairy-milk-10s",
+        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", // Your Publishable Key
+        workspace: "hgmm-pos",                           // Your Workspace
+        workflow: "find-cadbury-dairy-milk-10s",         // Your Workflow
         sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
     };
 
-    let inventory = {}, cart = {}, isScanning = true;
-    let tempItem = null, tempQty = 1, lastScan = null, lastTime = 0;
-
-    async function startSystem() {
-        document.getElementById('entrance-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'flex';
-        await fetchInventory();
-        initAI();
-    }
-
-    async function fetchInventory() {
-        try {
-            const res = await fetch(CONFIG.sheet);
-            const data = await res.text();
-            data.split('\n').slice(1).forEach(row => {
-                const c = row.split(',');
-                if(c[0]) {
-                    const rawName = c[0].trim();
-                    const cleanKey = rawName.toLowerCase().replace(/\s+/g, '');
-                    inventory[cleanKey] = { originalName: rawName, mrp: parseFloat(c[5])||0, price: parseFloat(c[6])||0 };
-                }
-            });
-        } catch(e) { document.getElementById('status-bar').innerText = "Inventory Error"; }
-    }
-
-    async function initAI() {
-        const video = document.getElementById('webcam');
+    async function initSystem() {
         const status = document.getElementById('status-bar');
-        
         try {
-            // 1. Force simple camera access first
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" } 
-            }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
-
-            video.srcObject = stream;
-            status.innerText = "Camera Active. Authenticating...";
-
-            // 2. Validate Roboflow Connection
-            const sdk = window.inference;
-            if (!sdk) throw new Error("SDK Load Failed");
-
-            const connector = sdk.connectors.withApiKey(CONFIG.apiKey);
+            // STEP 1: FORCE BROWSER PERMISSION POPUP
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             
-            // 3. Start WebRTC with error logging
+            document.getElementById('entrance-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('webcam').srcObject = stream;
+
+            // STEP 2: INITIALIZE AI STREAM
+            const sdk = window.inference;
+            const connector = sdk.connectors.withPublishableKey(CONFIG.publishableKey);
+            
             await sdk.webrtc.useStream({
                 source: stream,
                 connector: connector,
@@ -122,69 +74,17 @@
                     dataOutputNames: ["predictions"]
                 },
                 onData: (data) => {
-                    if(isScanning && data.predictions?.length > 0) {
-                        const top = data.predictions[0];
-                        status.innerText = `Online: ${top.class} (${Math.round(top.confidence*100)}%)`;
-                        handleInference(top);
-                    } else if (isScanning) {
-                        status.innerText = "AI Online. Waiting for product...";
+                    if(data.predictions?.length > 0) {
+                        status.innerText = `Online: Seeing ${data.predictions[0].class}`;
+                    } else {
+                        status.innerText = "AI Online: Scanning Area...";
                     }
                 }
-            }).catch(err => {
-                status.style.color = "red";
-                status.innerText = "ROBOFLOW ERROR: Workflow not deployed?";
-                console.error("Roboflow WebRTC Error:", err);
             });
-
-        } catch(err) {
+        } catch (err) {
             status.style.color = "red";
-            status.innerText = "PERMISSION ERROR: Check HTTPS or Camera Block";
-            console.error("Main Init Error:", err);
-        }
-    }
-
-    function handleInference(pred) {
-        document.getElementById('progress-bar').style.width = (pred.confidence * 100) + '%';
-        if(pred.confidence > 0.82 && pred.class !== "Background") {
-            if(pred.class !== lastScan || (Date.now() - lastTime) > 4000) {
-                const aiKey = pred.class.toLowerCase().replace(/\s+/g, '');
-                if(inventory[aiKey]) {
-                    isScanning = false; openQtyPopup(aiKey);
-                    lastScan = pred.class; lastTime = Date.now();
-                }
-            }
-        }
-    }
-
-    function openQtyPopup(key) {
-        tempItem = inventory[key]; tempQty = 1;
-        document.getElementById('pop-name').innerText = tempItem.originalName;
-        document.getElementById('pop-qty').innerText = tempQty;
-        document.getElementById('qty-modal').style.display = 'flex';
-    }
-
-    function updateTempQty(v) { tempQty = Math.max(1, tempQty + v); document.getElementById('pop-qty').innerText = tempQty; }
-
-    function addToCart() {
-        const name = tempItem.originalName;
-        if(cart[name]) cart[name].qty += tempQty;
-        else cart[name] = { ...tempItem, qty: tempQty };
-        document.getElementById('qty-modal').style.display = 'none';
-        isScanning = true; renderCart();
-    }
-
-    function renderCart() {
-        const list = document.getElementById('cart-items'); list.innerHTML = '';
-        let total = 0, savings = 0;
-        for (const k in cart) {
-            const itm = cart[k];
-            total += itm.price * itm.qty; savings += (itm.mrp - itm.price) * itm.qty;
-            list.innerHTML += `<div class="item-row"><span>${itm.originalName} x${itm.qty}</span><b>₹${Math.round(itm.price*itm.qty)}</b></div>`;
-        }
-        document.getElementById('sum-total').innerText = Math.round(total);
-        if(savings > 0) {
-            document.getElementById('savings-box').style.display = 'block';
-            document.getElementById('sum-savings').innerText = Math.round(savings);
+            status.innerText = "Error: Please check camera settings.";
+            console.error(err);
         }
     }
 </script>
