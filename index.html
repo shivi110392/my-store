@@ -8,67 +8,60 @@
     <style>
         :root { --primary: #2ecc71; --dark: #000; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
-        #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; text-align: center; }
-        .logo-main { width: 180px; height: 180px; border-radius: 50%; border: 3px solid #333; margin-bottom: 20px; }
+        #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
         .btn-start { background: var(--primary); color: #000; width: 100%; max-width: 300px; padding: 22px; border-radius: 50px; font-size: 18px; font-weight: 800; border: none; cursor: pointer; }
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
-        #camera-section { height: 40vh; background: #000; position: relative; }
+        #camera-section { height: 35vh; background: #000; position: relative; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 8px 15px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
-        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-        .total-box { background: #f9f9f9; padding: 20px; border-radius: 20px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+        .total-row { display: flex; justify-content: space-between; font-size: 32px; font-weight: 900; margin-top: auto; border-top: 2px solid #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
 
 <div id="entrance-screen">
-    <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main">
-    <h1 style="margin-bottom: 5px;">HIMALAYAN GLORY</h1>
-    <p style="color: #666; margin-bottom: 30px;">Sector-2, Shimla</p>
-    <button class="btn-start" onclick="launchPOS()">ALLOW CAMERA & START</button>
+    <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:150px; border-radius:50%; margin-bottom:20px;">
+    <h2 style="margin-bottom: 30px;">HIMALAYAN GLORY</h2>
+    <button class="btn-start" onclick="launchPOS()">START SCANNING</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <div id="status-bar">System initializing...</div>
+        <div id="status-bar">Initializing AI...</div>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
-        <div id="cart-items" style="text-align:center; color:#999; margin-top:30px;">Hold product to scan</div>
-        <div class="total-box">
-            <span style="font-weight:900; font-size:30px;">TOTAL</span>
-            <span style="font-weight:900; font-size:30px;">₹<span id="sum-total">0</span></span>
-        </div>
+        <div id="cart-items" style="flex:1; overflow-y:auto; text-align:center; padding-top:30px; color:#999;">Scan items now</div>
+        <div class="total-row"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
         <button class="btn-start" style="width:100%; max-width:none; margin-top:15px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
     </div>
 </div>
 
 <script>
     const CONFIG = {
-        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", // Your specific key
+        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", //
         workspace: "hgmm-pos",                           //
         workflow: "find-cadbury-dairy-milk-10s"          //
     };
 
+    let isScanning = true;
+
     async function launchPOS() {
         const status = document.getElementById('status-bar');
-        
         try {
-            // 1. Force the hardware request
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" } 
-            });
-
-            // 2. Switch screens only if camera is granted
+            // 1. Hardware Request
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             document.getElementById('entrance-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('webcam').srcObject = stream;
-            status.innerText = "Camera OK. Connecting AI...";
 
-            // 3. Connect Roboflow via WebRTC
+            // 2. Connect to Roboflow
             const sdk = window.inference;
             const connector = sdk.connectors.withPublishableKey(CONFIG.publishableKey);
             
+            status.innerText = "AI Online. Searching...";
+
             await sdk.webrtc.useStream({
                 source: stream,
                 connector: connector,
@@ -79,15 +72,15 @@
                     dataOutputNames: ["predictions"]
                 },
                 onData: (data) => {
-                    if(data.predictions && data.predictions.length > 0) {
-                        status.innerText = `Online: Seeing ${data.predictions[0].class}`;
-                    } else {
-                        status.innerText = "AI Online: Scanning...";
+                    if(isScanning && data.predictions && data.predictions.length > 0) {
+                        const top = data.predictions[0];
+                        status.innerText = `Seeing: ${top.class} (${Math.round(top.confidence*100)}%)`;
+                        // Trigger detection logic here
                     }
                 }
             });
         } catch (err) {
-            alert("Hardware Error: Please check if your camera is used by another app.");
+            status.innerText = "Connection Stuck. Refresh and try again.";
             console.error(err);
         }
     }
