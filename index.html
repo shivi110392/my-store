@@ -8,23 +8,19 @@
     <style>
         :root { --primary: #2ecc71; --dark: #000; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
-        
         #entrance-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
         .logo-main { width: 180px; height: 180px; border-radius: 50%; border: 3px solid #333; margin-bottom: 30px; }
         .btn-start { background: var(--primary); color: #000; width: 100%; max-width: 300px; padding: 20px; border-radius: 50px; font-size: 18px; font-weight: 800; border: none; cursor: pointer; }
-
         #main-app { display: none; height: 100vh; flex-direction: column; background: #fff; color: #000; }
         #camera-section { height: 35vh; background: #000; position: relative; overflow: hidden; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 6px 12px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
         #progress-bar { position: absolute; top: 0; left: 0; width: 0%; height: 6px; background: var(--primary); transition: width 0.1s; z-index: 10; }
-
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
         .item-list { flex: 1; overflow-y: auto; margin-bottom: 10px; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 5px; border-bottom: 1px solid #eee; font-weight: 700; }
         .summary-card { background: #f9f9f9; border-radius: 20px; padding: 20px; border: 1px solid #eee; }
         .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 28px; font-weight: 900; }
-
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; }
         .popup { background:#fff; padding:30px; border-radius:30px; width:85%; max-width: 400px; text-align: center; }
     </style>
@@ -40,32 +36,28 @@
 <div id="main-app">
     <div id="camera-section">
         <div id="progress-bar"></div>
-        <div id="status-bar">Connecting...</div>
+        <div id="status-bar">System initializing...</div>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
     <div id="billing-section">
-        <div class="item-list" id="cart-items">
-            <div style="text-align:center; color:#999; margin-top:50px; font-size: 14px;">Camera Active. Scan product.</div>
-        </div>
+        <div class="item-list" id="cart-items"><div style="text-align:center; color:#999; margin-top:50px;">Waiting for scan...</div></div>
         <div class="summary-card">
-            <div id="savings-box" style="display:none; color: #27ae60; font-size: 18px; font-weight: 900; margin-bottom: 10px; text-align: center;">SAVINGS: ₹<span id="sum-savings">0</span></div>
+            <div id="savings-box" style="display:none; color:#27ae60; font-size:18px; font-weight:900; margin-bottom:10px; text-align:center;">SAVINGS: ₹<span id="sum-savings">0</span></div>
             <div class="total-row"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
             <button class="btn-start" style="width:100%; margin-top:20px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
         </div>
     </div>
 </div>
 
-<div id="qty-modal" class="modal">
-    <div class="popup">
-        <h2 id="pop-name" style="font-weight: 900;">Item</h2>
-        <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:25px 0;">
-            <button style="width:55px; height:55px; border-radius:50%; border: 1px solid #ccc;" onclick="updateTempQty(-1)">−</button>
-            <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
-            <button style="width:55px; height:55px; border-radius:50%; background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
-        </div>
-        <button class="btn-start" style="width:100%;" onclick="addToCart()">ADD TO BILL</button>
+<div id="qty-modal" class="modal"><div class="popup">
+    <h2 id="pop-name" style="font-weight: 900;">Item</h2>
+    <div style="display:flex; justify-content:center; align-items:center; gap:25px; margin:25px 0;">
+        <button style="width:55px; height:55px; border-radius:50%; border:1px solid #ccc;" onclick="updateTempQty(-1)">−</button>
+        <span id="pop-qty" style="font-size:45px; font-weight:900;">1</span>
+        <button style="width:55px; height:55px; border-radius:50%; background:var(--primary); border:none;" onclick="updateTempQty(1)">+</button>
     </div>
-</div>
+    <button class="btn-start" style="width:100%;" onclick="addToCart()">ADD TO BILL</button>
+</div></div>
 
 <script>
     const CONFIG = {
@@ -92,18 +84,12 @@
             data.split('\n').slice(1).forEach(row => {
                 const c = row.split(',');
                 if(c[0]) {
-                    // Normalize the name: lowercase and remove extra spaces
                     const rawName = c[0].trim();
                     const cleanKey = rawName.toLowerCase().replace(/\s+/g, '');
-                    inventory[cleanKey] = { 
-                        originalName: rawName,
-                        mrp: parseFloat(c[5])||0, 
-                        price: parseFloat(c[6])||0 
-                    };
+                    inventory[cleanKey] = { originalName: rawName, mrp: parseFloat(c[5])||0, price: parseFloat(c[6])||0 };
                 }
             });
-            console.log("Sheet Keys (Cleaned):", Object.keys(inventory));
-        } catch(e) { document.getElementById('status-bar').innerText = "Inventory Link Fail"; }
+        } catch(e) { document.getElementById('status-bar').innerText = "Inventory Error"; }
     }
 
     async function initAI() {
@@ -111,12 +97,21 @@
         const status = document.getElementById('status-bar');
         
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            // 1. Force simple camera access first
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
+            }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+
             video.srcObject = stream;
-            
+            status.innerText = "Camera Active. Authenticating...";
+
+            // 2. Validate Roboflow Connection
             const sdk = window.inference;
+            if (!sdk) throw new Error("SDK Load Failed");
+
             const connector = sdk.connectors.withApiKey(CONFIG.apiKey);
             
+            // 3. Start WebRTC with error logging
             await sdk.webrtc.useStream({
                 source: stream,
                 connector: connector,
@@ -129,32 +124,33 @@
                 onData: (data) => {
                     if(isScanning && data.predictions?.length > 0) {
                         const top = data.predictions[0];
-                        status.innerText = `Seeing: ${top.class} (${Math.round(top.confidence*100)}%)`;
+                        status.innerText = `Online: ${top.class} (${Math.round(top.confidence*100)}%)`;
                         handleInference(top);
                     } else if (isScanning) {
-                        status.innerText = "Scanning Area...";
+                        status.innerText = "AI Online. Waiting for product...";
                     }
                 }
+            }).catch(err => {
+                status.style.color = "red";
+                status.innerText = "ROBOFLOW ERROR: Workflow not deployed?";
+                console.error("Roboflow WebRTC Error:", err);
             });
+
         } catch(err) {
             status.style.color = "red";
-            status.innerText = "Check Camera/API Key Permissions";
+            status.innerText = "PERMISSION ERROR: Check HTTPS or Camera Block";
+            console.error("Main Init Error:", err);
         }
     }
 
     function handleInference(pred) {
         document.getElementById('progress-bar').style.width = (pred.confidence * 100) + '%';
-        if(pred.confidence > 0.80 && pred.class !== "Background") {
+        if(pred.confidence > 0.82 && pred.class !== "Background") {
             if(pred.class !== lastScan || (Date.now() - lastTime) > 4000) {
-                // Fuzzy Match: Normalize the AI's label the same way as the sheet keys
                 const aiKey = pred.class.toLowerCase().replace(/\s+/g, '');
-                
                 if(inventory[aiKey]) {
-                    isScanning = false; 
-                    openQtyPopup(aiKey);
+                    isScanning = false; openQtyPopup(aiKey);
                     lastScan = pred.class; lastTime = Date.now();
-                } else {
-                    console.warn(`No match found in Sheet for AI label: "${pred.class}"`);
                 }
             }
         }
@@ -182,8 +178,7 @@
         let total = 0, savings = 0;
         for (const k in cart) {
             const itm = cart[k];
-            total += itm.price * itm.qty;
-            savings += (itm.mrp - itm.price) * itm.qty;
+            total += itm.price * itm.qty; savings += (itm.mrp - itm.price) * itm.qty;
             list.innerHTML += `<div class="item-row"><span>${itm.originalName} x${itm.qty}</span><b>₹${Math.round(itm.price*itm.qty)}</b></div>`;
         }
         document.getElementById('sum-total').innerText = Math.round(total);
