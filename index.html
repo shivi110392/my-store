@@ -15,9 +15,6 @@
         #camera-section { height: 35vh; background: #000; position: relative; overflow: hidden; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 6px 12px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
-        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; }
-        .summary-card { background: #f9f9f9; border-radius: 20px; padding: 20px; border: 1px solid #eee; margin-top: auto; }
-        .total-row { display: flex; justify-content: space-between; font-size: 28px; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -33,34 +30,43 @@
         <div id="status-bar">Starting AI...</div>
         <video id="webcam" autoplay playsinline muted></video>
     </div>
-    <div id="billing-section">
-        <div id="cart-items" style="flex:1; overflow-y:auto; padding-top:20px; text-align:center; color:#999;">Scan items to begin...</div>
-        <div class="summary-card">
-            <div class="total-row"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
-            <button class="btn-start" style="width:100%; margin-top:20px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
+    <div id="billing-section" style="flex:1; padding:20px; display:flex; flex-direction:column;">
+        <div id="cart-items" style="flex:1; text-align:center; color:#999; padding-top:20px;">Scan items...</div>
+        <div style="background:#f9f9f9; padding:20px; border-radius:20px; border:1px solid #eee;">
+            <div style="display:flex; justify-content:space-between; font-size:28px; font-weight:900;">
+                <span>TOTAL</span><span>₹<span id="sum-total">0</span></span>
+            </div>
+            <button class="btn-start" style="width:100%; margin-top:15px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
         </div>
     </div>
 </div>
 
 <script>
     const CONFIG = {
-        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", // Your Publishable Key
-        workspace: "hgmm-pos",                           // Your Workspace
-        workflow: "find-cadbury-dairy-milk-10s",         // Your Workflow
+        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", // Verified Publishable Key
+        workspace: "hgmm-pos",                           // Verified Workspace
+        workflow: "find-cadbury-dairy-milk-10s",         // Verified Workflow
         sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
     };
 
     async function initSystem() {
         const status = document.getElementById('status-bar');
         try {
-            // STEP 1: FORCE BROWSER PERMISSION POPUP
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            
+            // 1. Force a simple camera check first
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } } 
+            }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+
+            if (!stream) throw new Error("No camera stream found");
+
             document.getElementById('entrance-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('webcam').srcObject = stream;
+            
+            const video = document.getElementById('webcam');
+            video.srcObject = stream;
+            status.innerText = "Camera Active. Connecting AI...";
 
-            // STEP 2: INITIALIZE AI STREAM
+            // 2. Initialize Roboflow using your verified Publishable Key
             const sdk = window.inference;
             const connector = sdk.connectors.withPublishableKey(CONFIG.publishableKey);
             
@@ -74,17 +80,23 @@
                     dataOutputNames: ["predictions"]
                 },
                 onData: (data) => {
-                    if(data.predictions?.length > 0) {
+                    if(data.predictions && data.predictions.length > 0) {
                         status.innerText = `Online: Seeing ${data.predictions[0].class}`;
                     } else {
                         status.innerText = "AI Online: Scanning Area...";
                     }
                 }
             });
+
         } catch (err) {
             status.style.color = "red";
-            status.innerText = "Error: Please check camera settings.";
-            console.error(err);
+            // Detailed Error Debugging
+            if (location.protocol !== 'https:') {
+                status.innerText = "ERROR: You must use HTTPS (GitHub Pages) for the camera.";
+            } else {
+                status.innerText = "ERROR: Camera blocked. Check browser permissions.";
+            }
+            console.error("System Init Error:", err);
         }
     }
 </script>
