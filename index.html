@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Himalayan Glory POS</title>
-    <script src="https://cdn.jsdelivr.net/npm/@roboflow/inference-sdk@0.2.0/dist/inference-sdk.min.js"></script>
     <style>
         :root { --primary: #2ecc71; --dark: #000; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--dark); color: #fff; height: 100vh; overflow: hidden; }
@@ -14,75 +13,93 @@
         #camera-section { height: 35vh; background: #000; position: relative; }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #status-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 8px 15px; border-radius: 20px; font-family: monospace; font-size: 11px; z-index: 100; border: 1px solid #333; }
-        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; }
-        .total-row { display: flex; justify-content: space-between; font-size: 32px; font-weight: 900; margin-top: auto; border-top: 2px solid #eee; padding-top: 15px; }
+        #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .total-box { background: #f9f9f9; padding: 20px; border-radius: 20px; border: 1px solid #eee; display: flex; justify-content: space-between; font-weight: 900; font-size: 30px; }
     </style>
 </head>
 <body>
 
 <div id="entrance-screen">
     <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" style="width:150px; border-radius:50%; margin-bottom:20px;">
-    <h2 style="margin-bottom: 30px;">HIMALAYAN GLORY</h2>
-    <button class="btn-start" onclick="launchPOS()">START SCANNING</button>
+    <h2>HIMALAYAN GLORY</h2>
+    <button class="btn-start" onclick="launchPOS()">ACTIVATE SCANNER</button>
 </div>
 
 <div id="main-app">
     <div id="camera-section">
-        <div id="status-bar">Initializing AI...</div>
+        <div id="status-bar">AI Status: Offline</div>
         <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="snapshot" style="display:none;"></canvas>
     </div>
     <div id="billing-section">
-        <div id="cart-items" style="flex:1; overflow-y:auto; text-align:center; padding-top:30px; color:#999;">Scan items now</div>
-        <div class="total-row"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
+        <div id="cart-items" style="text-align:center; color:#999; margin-top:30px;">Point camera at product label</div>
+        <div class="total-box"><span>TOTAL</span><span>₹<span id="sum-total">0</span></span></div>
         <button class="btn-start" style="width:100%; max-width:none; margin-top:15px; border-radius:15px;" onclick="location.reload()">NEW BILL</button>
     </div>
 </div>
 
 <script>
     const CONFIG = {
-        publishableKey: "rf_XuU7NpIlxmfQbw24Mb3kU0GxfjB2", //
-        workspace: "hgmm-pos",                           //
-        workflow: "find-cadbury-dairy-milk-10s"          //
+        apiKey: "8n3ZmJUiFbggayPObv7S", // From image_b7a5f5.png
+        workspace: "hgmm-pos",          // From image_b74705.png
+        workflow: "find-cadbury-dairy-milk-10s" // From image_b74705.png
     };
 
     let isScanning = true;
+    const status = document.getElementById('status-bar');
 
     async function launchPOS() {
-        const status = document.getElementById('status-bar');
         try {
-            // 1. Hardware Request
+            // 1. Grant Camera
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             document.getElementById('entrance-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('webcam').srcObject = stream;
-
-            // 2. Connect to Roboflow
-            const sdk = window.inference;
-            const connector = sdk.connectors.withPublishableKey(CONFIG.publishableKey);
             
-            status.innerText = "AI Online. Searching...";
-
-            await sdk.webrtc.useStream({
-                source: stream,
-                connector: connector,
-                wrtcParams: {
-                    workspaceName: CONFIG.workspace,
-                    workflowId: CONFIG.workflow,
-                    imageInputName: "image",
-                    dataOutputNames: ["predictions"]
-                },
-                onData: (data) => {
-                    if(isScanning && data.predictions && data.predictions.length > 0) {
-                        const top = data.predictions[0];
-                        status.innerText = `Seeing: ${top.class} (${Math.round(top.confidence*100)}%)`;
-                        // Trigger detection logic here
-                    }
-                }
-            });
+            status.innerText = "AI Online: Searching...";
+            
+            // 2. Start Infinite Loop for Snapshot Inference
+            runInferenceLoop();
         } catch (err) {
-            status.innerText = "Connection Stuck. Refresh and try again.";
-            console.error(err);
+            alert("Camera Access Denied.");
         }
+    }
+
+    async function runInferenceLoop() {
+        if (!isScanning) return;
+
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('snapshot');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        
+        // Capture frame
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const base64Image = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+
+        try {
+            // Serverless Workflow Call
+            const response = await fetch(`https://serverless.roboflow.com/${CONFIG.workspace}/workflows/${CONFIG.workflow}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    api_key: CONFIG.apiKey,
+                    inputs: { "image": { "type": "base64", "value": base64Image } }
+                })
+            });
+
+            const result = await response.json();
+            
+            // Dig into Workflow Output
+            if (result.outputs && result.outputs[0].predictions.length > 0) {
+                const pred = result.outputs[0].predictions[0];
+                status.innerText = `Seeing: ${pred.class} (${Math.round(pred.confidence * 100)}%)`;
+                // Add billing logic here
+            }
+        } catch (e) { console.error("Sync Error", e); }
+
+        // Repeat every 1 second to avoid "Stuck Connection"
+        setTimeout(runInferenceLoop, 1000);
     }
 </script>
 </body>
