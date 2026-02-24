@@ -27,4 +27,272 @@
         /* Billing Section */
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; background: #f4f6f8; border-top-left-radius: 25px; border-top-right-radius: 25px; margin-top: -20px; position: relative; z-index: 10; }
         
-        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom:
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; color: #000; }
+        .item-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+        
+        /* Cart Items */
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #000; }
+        .item-name { font-weight: 700; font-size: 16px; display: block; }
+        .item-details { font-size: 13px; color: #666; }
+        .item-price { font-weight: 900; color: var(--primary); font-size: 18px; }
+        
+        /* Qty Controls */
+        .qty-controls { display:flex; align-items:center; gap: 10px; margin-right: 15px; }
+        .btn-qty { width:32px; height:32px; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-minus { border:1px solid #ccc; background:#fff; color: #000; }
+        .btn-plus { border:none; background:var(--primary); color:#000; }
+
+        /* Footer */
+        .footer-total { margin-top: auto; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); color: #000; }
+        .total-row { display: flex; justify-content: space-between; font-size: 24px; font-weight: 900; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="entrance-screen">
+    <img src="https://i.ibb.co/6PZ8X7z/IMG-1320.png" class="logo-main" alt="Logo">
+    <h1>HIMALAYAN GLORY</h1>
+    <p style="color:#888; margin-bottom: 30px;">Self-Checkout Kiosk</p>
+    <button class="btn-main" onclick="startSystem()">Start Shopping</button>
+</div>
+
+<div id="main-app">
+    <div id="camera-section">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="snapshot" style="display:none;"></canvas>
+        
+        <div id="scan-overlay">
+            <button id="btn-scan" onclick="captureAndScan()">📸 SCAN NOW</button>
+        </div>
+        
+        <div id="status-bar" style="position:absolute; top:20px; left:0; width:100%; text-align:center; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8); font-weight:600;">Ready</div>
+    </div>
+
+    <div id="billing-section">
+        <div class="cart-header">
+            <h3 style="margin:0;">Your Cart</h3>
+            <button onclick="clearCart()" style="background:none; border:none; color:#e74c3c; font-weight:600; cursor:pointer;">Clear All</button>
+        </div>
+        
+        <div id="cart-list" class="item-list">
+            <div style="text-align:center; color:#999; margin-top:40px;">
+                Arrange items on counter,<br>then press SCAN above.
+            </div>
+        </div>
+
+        <div class="footer-total">
+            <div class="total-row">
+                <span>Total</span>
+                <span>₹<span id="sum-total">0</span></span>
+            </div>
+            <button class="btn-main" onclick="location.reload()">Pay & Finish</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONFIG = {
+        apiKey: "8n3ZmJUiFbggayPObv7S",
+        modelUrl: "https://serverless.roboflow.com/himalayan-glory-inventory/3", 
+        sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
+    };
+
+    let inventory = {};
+    let cart = {}; 
+
+    // --- SYSTEM START ---
+    async function startSystem() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
+            });
+            document.getElementById('entrance-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('webcam').srcObject = stream;
+            
+            await fetchInventory();
+        } catch (err) { alert("Camera Permission Required"); }
+    }
+
+    // --- LOAD INVENTORY (New 4-Column Layout) ---
+    async function fetchInventory() {
+        try {
+            const res = await fetch(CONFIG.sheet);
+            const text = await res.text();
+            inventory = {};
+            text.split('\n').slice(1).forEach(row => {
+                const c = row.split(',');
+                if(c[0]) {
+                    // Normalize ID: lowercase, no spaces
+                    const id = c[0].trim().toLowerCase().replace(/[\s-]/g, '');
+                    inventory[id] = { 
+                        name: c[1] ? c[1].trim() : "Unknown Item", 
+                        mrp: parseFloat(c[2]) || 0,
+                        price: parseFloat(c[3]) || 0,
+                        gst: parseFloat(c[4]) || 0
+                    };
+                }
+            });
+            console.log("Inventory Loaded:", Object.keys(inventory).length, "items");
+        } catch(e) { console.error("Sheet Error"); }
+    }
+
+    // --- CLICK TO SCAN ---
+    async function captureAndScan() {
+        const btn = document.getElementById('btn-scan');
+        const status = document.getElementById('status-bar');
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('snapshot');
+
+        btn.innerText = "⏳ Processing...";
+        btn.style.background = "#bdc3c7";
+        status.innerText = "Analyzing image...";
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        // Convert to Base64
+        const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+        try {
+            const response = await fetch(`${CONFIG.modelUrl}?api_key=${CONFIG.apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: base64Image
+            });
+
+            const result = await response.json();
+            
+            if (result.predictions) {
+                const detections = result.predictions;
+                let foundCount = 0;
+                
+                // Smart Distance Filter Array to prevent double-counting
+                let seenLocations = [];
+
+                detections.forEach(pred => {
+                    // 40% Confidence Threshold
+                    if (pred.confidence > 0.40) {
+                        const cleanKey = pred.class.toLowerCase().replace(/[\s-]/g, '');
+                        
+                        if (inventory[cleanKey]) {
+                            // Check if this is a duplicate detection of the same physical item
+                            const isDuplicate = seenLocations.some(loc => 
+                                loc.id === cleanKey && 
+                                Math.abs(loc.x - pred.x) < 100 && 
+                                Math.abs(loc.y - pred.y) < 100
+                            );
+
+                            // Only add if it's not a duplicate
+                            if (!isDuplicate) {
+                                addToCart(cleanKey);
+                                foundCount++;
+                                seenLocations.push({ id: cleanKey, x: pred.x, y: pred.y }); // Record location
+                            }
+                        }
+                    }
+                });
+
+                if(foundCount > 0) {
+                    status.innerText = `Success! Added ${foundCount} items.`;
+                    playSuccessSound();
+                } else {
+                    status.innerText = "No items recognized.";
+                }
+            } else {
+                status.innerText = "No objects detected.";
+            }
+
+        } catch (e) {
+            status.innerText = "Network Error. Try again.";
+            console.error(e);
+        }
+
+        btn.innerText = "📸 SCAN NOW";
+        btn.style.background = "var(--primary)";
+    }
+
+    // --- CART LOGIC ---
+    // If you want the cart to CLEAR automatically on every new scan, 
+    // you would call clearCart() at the top of captureAndScan().
+    function addToCart(id) {
+        if (cart[id]) {
+            cart[id].qty++;
+        } else {
+            cart[id] = { ...inventory[id], qty: 1 };
+        }
+        renderCart();
+    }
+
+    function changeQty(id, amount) {
+        if(cart[id]) {
+            cart[id].qty += amount;
+            if(cart[id].qty <= 0) {
+                delete cart[id];
+            }
+        }
+        renderCart();
+    }
+
+    function clearCart() {
+        cart = {};
+        renderCart();
+        document.getElementById('status-bar').innerText = "Cart Cleared";
+    }
+
+    function renderCart() {
+        const list = document.getElementById('cart-list');
+        list.innerHTML = '';
+        let total = 0;
+        let hasItems = false;
+
+        for (const k in cart) {
+            hasItems = true;
+            const itm = cart[k];
+            total += itm.price * itm.qty;
+            
+            list.innerHTML += `
+                <div class="cart-item">
+                    <div style="flex: 1;">
+                        <span class="item-name">${itm.name}</span>
+                        <span class="item-details">₹${itm.price} each</span>
+                    </div>
+                    
+                    <div class="qty-controls">
+                        <button class="btn-qty btn-minus" onclick="changeQty('${k}', -1)">−</button>
+                        <span style="font-weight:900; font-size:18px; width:20px; text-align:center;">${itm.qty}</span>
+                        <button class="btn-qty btn-plus" onclick="changeQty('${k}', 1)">+</button>
+                    </div>
+
+                    <div style="min-width: 60px; text-align:right;">
+                        <span class="item-price">₹${Math.round(itm.price * itm.qty)}</span>
+                    </div>
+                </div>`;
+        }
+
+        if(!hasItems) {
+            list.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">Cart is empty.<br>Place items flat and press SCAN.</div>';
+        }
+
+        document.getElementById('sum-total').innerText = Math.round(total);
+    }
+
+    function playSuccessSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.setValueAtTime(1200, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+    }
+</script>
+</body>
+</html>
