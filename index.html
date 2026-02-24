@@ -27,18 +27,23 @@
         /* Billing Section */
         #billing-section { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; background: #f4f6f8; border-top-left-radius: 25px; border-top-right-radius: 25px; margin-top: -20px; position: relative; z-index: 10; }
         
-        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 10px; color: #000; }
         .item-list { flex: 1; overflow-y: auto; padding-right: 5px; }
         
         /* Cart Items */
-        .cart-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #000; }
         .item-name { font-weight: 700; font-size: 16px; display: block; }
         .item-details { font-size: 13px; color: #666; }
-        .item-price { font-weight: 900; color: var(--primary); font-size: 18px; margin-right: 15px; }
-        .btn-remove { background: #fee; color: var(--danger); border: none; width: 30px; height: 30px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .item-price { font-weight: 900; color: var(--primary); font-size: 18px; }
+        
+        /* Qty Controls */
+        .qty-controls { display:flex; align-items:center; gap: 10px; margin-right: 15px; }
+        .btn-qty { width:32px; height:32px; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-minus { border:1px solid #ccc; background:#fff; color: #000; }
+        .btn-plus { border:none; background:var(--primary); color:#000; }
 
         /* Footer */
-        .footer-total { margin-top: auto; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
+        .footer-total { margin-top: auto; background: #fff; padding: 20px; border-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); color: #000; }
         .total-row { display: flex; justify-content: space-between; font-size: 24px; font-weight: 900; margin-bottom: 15px; }
     </style>
 </head>
@@ -66,7 +71,7 @@
     <div id="billing-section">
         <div class="cart-header">
             <h3 style="margin:0;">Your Cart</h3>
-            <button onclick="clearCart()" style="background:none; border:none; color:#e74c3c; font-weight:600;">Clear All</button>
+            <button onclick="clearCart()" style="background:none; border:none; color:#e74c3c; font-weight:600; cursor:pointer;">Clear All</button>
         </div>
         
         <div id="cart-list" class="item-list">
@@ -88,18 +93,17 @@
 <script>
     const CONFIG = {
         apiKey: "8n3ZmJUiFbggayPObv7S",
-        workspace: "hgmm-pos",          
-        workflow: "find-cadbury-dairy-milk-10s", 
+        // New Endpoint URL you provided:
+        modelUrl: "https://detect.roboflow.com/himalayan-glory-inventory/3", 
         sheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyhBP3yyTYrAJR_-luY7Yr5P7PVKLHRleiH9LWMTASiL7sh0HpZDf2ji5s__ddYcSaS-9aFg5Epz9x/pub?output=csv"
     };
 
     let inventory = {};
-    let cart = {}; // Stores items by ID
+    let cart = {}; 
 
     // --- SYSTEM START ---
     async function startSystem() {
         try {
-            // High Res Camera for Snapshot Clarity
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } 
             });
@@ -111,7 +115,7 @@
         } catch (err) { alert("Camera Permission Required"); }
     }
 
-    // --- LOAD INVENTORY (New 4-Column Layout) ---
+    // --- LOAD INVENTORY (4 Columns) ---
     async function fetchInventory() {
         try {
             const res = await fetch(CONFIG.sheet);
@@ -120,58 +124,54 @@
             text.split('\n').slice(1).forEach(row => {
                 const c = row.split(',');
                 if(c[0]) {
-                    // Normalize ID for matching: lowercase, no spaces, no dashes
+                    // Normalize ID: lowercase, no spaces
                     const id = c[0].trim().toLowerCase().replace(/[\s-]/g, '');
                     inventory[id] = { 
-                        name: c[0].trim(), 
-                        mrp: parseFloat(c[1]) || 0,
-                        price: parseFloat(c[2]) || 0,
-                        gst: parseFloat(c[3]) || 0
+                        name: c[1] ? c[1].trim() : "Unknown Item", 
+                        mrp: parseFloat(c[2]) || 0,
+                        price: parseFloat(c[3]) || 0,
+                        gst: parseFloat(c[4]) || 0
                     };
                 }
             });
-            console.log("Inventory Ready:", Object.keys(inventory).length, "items");
         } catch(e) { console.error("Sheet Error"); }
     }
 
-    // --- THE MAIN EVENT: CLICK TO SCAN ---
+    // --- CLICK TO SCAN ---
     async function captureAndScan() {
         const btn = document.getElementById('btn-scan');
         const status = document.getElementById('status-bar');
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('snapshot');
 
-        // UI Feedback
         btn.innerText = "⏳ Processing...";
         btn.style.background = "#bdc3c7";
         status.innerText = "Analyzing image...";
 
-        // 1. Capture High-Res Snapshot
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        // Convert to Base64 (Standard Format for Detect API)
         const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
         try {
-            // 2. Send to Roboflow
-            const response = await fetch(`https://serverless.roboflow.com/${CONFIG.workspace}/workflows/${CONFIG.workflow}`, {
+            // NEW TRADITIONAL API CALL
+            const response = await fetch(`${CONFIG.modelUrl}?api_key=${CONFIG.apiKey}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    api_key: CONFIG.apiKey,
-                    inputs: { "image": { "type": "base64", "value": base64Image } }
-                })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: base64Image
             });
 
             const result = await response.json();
             
-            // 3. Process Results
-            if (result.outputs && result.outputs[0].predictions && result.outputs[0].predictions.predictions) {
-                const detections = result.outputs[0].predictions.predictions;
+            // NEW PARSING LOGIC FOR TRADITIONAL MODELS
+            if (result.predictions) {
+                const detections = result.predictions;
                 let foundCount = 0;
 
                 detections.forEach(pred => {
-                    // 40% Confidence Threshold for Indoor Lighting
+                    // 40% Confidence Threshold
                     if (pred.confidence > 0.40) {
                         const cleanKey = pred.class.toLowerCase().replace(/[\s-]/g, '');
                         
@@ -186,7 +186,7 @@
                     status.innerText = `Success! Added ${foundCount} items.`;
                     playSuccessSound();
                 } else {
-                    status.innerText = "No items recognized. Try adjusting light/angle.";
+                    status.innerText = "No items recognized.";
                 }
             } else {
                 status.innerText = "No objects detected.";
@@ -197,7 +197,6 @@
             console.error(e);
         }
 
-        // Reset Button
         btn.innerText = "📸 SCAN NOW";
         btn.style.background = "var(--primary)";
     }
@@ -212,10 +211,12 @@
         renderCart();
     }
 
-    function removeFromCart(id) {
+    function changeQty(id, amount) {
         if(cart[id]) {
-            if(cart[id].qty > 1) cart[id].qty--;
-            else delete cart[id];
+            cart[id].qty += amount;
+            if(cart[id].qty <= 0) {
+                delete cart[id];
+            }
         }
         renderCart();
     }
@@ -239,19 +240,25 @@
             
             list.innerHTML += `
                 <div class="cart-item">
-                    <div>
+                    <div style="flex: 1;">
                         <span class="item-name">${itm.name}</span>
-                        <span class="item-details">Qty: ${itm.qty} &times; ₹${itm.price}</span>
+                        <span class="item-details">₹${itm.price} each</span>
                     </div>
-                    <div style="display:flex; align-items:center;">
+                    
+                    <div class="qty-controls">
+                        <button class="btn-qty btn-minus" onclick="changeQty('${k}', -1)">−</button>
+                        <span style="font-weight:900; font-size:18px; width:20px; text-align:center;">${itm.qty}</span>
+                        <button class="btn-qty btn-plus" onclick="changeQty('${k}', 1)">+</button>
+                    </div>
+
+                    <div style="min-width: 60px; text-align:right;">
                         <span class="item-price">₹${Math.round(itm.price * itm.qty)}</span>
-                        <button class="btn-remove" onclick="removeFromCart('${k}')">×</button>
                     </div>
                 </div>`;
         }
 
         if(!hasItems) {
-            list.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">Cart is empty.<br>Press SCAN to add items.</div>';
+            list.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">Cart is empty.<br>Place items flat and press SCAN.</div>';
         }
 
         document.getElementById('sum-total').innerText = Math.round(total);
